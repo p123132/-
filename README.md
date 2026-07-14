@@ -142,6 +142,62 @@ curl -X POST http://localhost:5000/api/todos \
 - 📱 **响应式布局**：支持桌面端和移动端
 - ⚡ **流畅动画**：页面切换和交互都有精心设计的动画效果
 
+## 🚀 部署方案
+
+### 前端部署（Vercel）
+
+1. 访问 [Vercel](https://vercel.com/) 并登录
+2. 点击 "New Project"，选择 GitHub 仓库
+3. 选择前端目录 `frontend/`
+4. 设置环境变量：
+   - `NEXT_PUBLIC_API_BASE`: 后端API地址（如 `https://your-backend.onrender.com/api`）
+5. 点击 "Deploy" 完成部署
+
+### 后端部署（Render）
+
+1. 访问 [Render](https://render.com/) 并登录
+2. 点击 "New" → "Web Service"
+3. 选择 GitHub 仓库
+4. 设置配置：
+   - **Build Command**: `pip install -r backend/requirements.txt`
+   - **Start Command**: `python backend/app.py`
+5. 点击 "Create Web Service" 完成部署
+
+### 部署注意事项
+
+- 确保后端部署后配置了正确的 CORS 允许域名
+- SQLite 数据库在 Render 上可能会有持久化问题，建议使用外部数据库（如 PostgreSQL）
+
+## 🔍 AI Code Review
+
+### 审查工具
+- Trae AI 代码助手
+
+### 审查结果
+
+**后端代码审查**：
+1. ✅ API接口设计符合 RESTful 规范
+2. ✅ 使用了参数校验和错误处理
+3. ✅ 数据库操作使用参数化查询，防止SQL注入
+4. ✅ 配置了 CORS 支持跨域请求
+5. ⚠️ 建议添加 API 文档生成（如 Flask-RESTX）
+6. ⚠️ 建议添加请求日志记录
+
+**前端代码审查**：
+1. ✅ 组件结构清晰，职责分明
+2. ✅ 使用了 TypeScript 类型定义
+3. ✅ 动画效果流畅，用户体验良好
+4. ⚠️ 建议添加错误边界处理
+5. ⚠️ 建议使用 React Query 进行数据缓存
+6. ⚠️ API地址应使用环境变量配置
+
+### 优化建议
+
+1. **性能优化**：添加数据缓存机制，减少重复请求
+2. **安全性**：添加用户认证和权限控制
+3. **可维护性**：抽取公共组件，减少代码重复
+4. **测试**：添加单元测试和集成测试
+
 ## 📄 许可证
 
 MIT License
