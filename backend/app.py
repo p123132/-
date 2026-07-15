@@ -6,7 +6,7 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-DATABASE = 'todos.db'
+DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'todos.db')
 
 def get_db():
     conn = sqlite3.connect(DATABASE)
@@ -23,9 +23,24 @@ def init_db():
                 description TEXT,
                 completed BOOLEAN DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                priority INTEGER DEFAULT 1
+                priority INTEGER DEFAULT 1,
+                photo TEXT,
+                due_date DATE,
+                planned_date DATE
             )
         ''')
+        try:
+            conn.execute('ALTER TABLE todos ADD COLUMN photo TEXT')
+        except sqlite3.OperationalError:
+            pass
+        try:
+            conn.execute('ALTER TABLE todos ADD COLUMN due_date DATE')
+        except sqlite3.OperationalError:
+            pass
+        try:
+            conn.execute('ALTER TABLE todos ADD COLUMN planned_date DATE')
+        except sqlite3.OperationalError:
+            pass
     conn.close()
 
 @app.route('/api/todos', methods=['GET'])
@@ -43,9 +58,10 @@ def create_todo():
     
     conn = get_db()
     cursor = conn.execute('''
-        INSERT INTO todos (title, description, priority)
-        VALUES (?, ?, ?)
-    ''', (data['title'], data.get('description', ''), data.get('priority', 1)))
+        INSERT INTO todos (title, description, priority, photo, due_date, planned_date)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (data['title'], data.get('description', ''), data.get('priority', 1),
+          data.get('photo', ''), data.get('due_date', ''), data.get('planned_date', '')))
     conn.commit()
     todo = conn.execute('SELECT * FROM todos WHERE id = ?', (cursor.lastrowid,)).fetchone()
     conn.close()
@@ -61,10 +77,12 @@ def update_todo(id):
         return jsonify({'error': 'Todo not found'}), 404
     
     conn.execute('''
-        UPDATE todos SET title = ?, description = ?, completed = ?, priority = ?
+        UPDATE todos SET title = ?, description = ?, completed = ?, priority = ?, photo = ?, due_date = ?, planned_date = ?
         WHERE id = ?
     ''', (data.get('title', todo['title']), data.get('description', todo['description']), 
-          data.get('completed', todo['completed']), data.get('priority', todo['priority']), id))
+          data.get('completed', todo['completed']), data.get('priority', todo['priority']),
+          data.get('photo', todo['photo']), data.get('due_date', todo['due_date']),
+          data.get('planned_date', todo['planned_date']), id))
     conn.commit()
     updated_todo = conn.execute('SELECT * FROM todos WHERE id = ?', (id,)).fetchone()
     conn.close()
@@ -82,6 +100,19 @@ def delete_todo(id):
     conn.commit()
     conn.close()
     return jsonify({'message': 'Todo deleted successfully'}), 200
+
+@app.route('/api/todos/batch', methods=['DELETE'])
+def batch_delete_todos():
+    data = request.get_json()
+    if not data or not isinstance(data.get('ids'), list):
+        return jsonify({'error': 'IDs list is required'}), 400
+    
+    conn = get_db()
+    placeholders = ','.join('?' * len(data['ids']))
+    conn.execute(f'DELETE FROM todos WHERE id IN ({placeholders})', data['ids'])
+    conn.commit()
+    conn.close()
+    return jsonify({'message': f'{len(data["ids"])} todos deleted successfully'}), 200
 
 @app.route('/api/todos/<int:id>/complete', methods=['POST'])
 def toggle_complete(id):

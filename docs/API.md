@@ -21,7 +21,10 @@
     "description": "每天学习2小时",
     "completed": 0,
     "priority": 2,
-    "created_at": "2024-01-01 12:00:00"
+    "created_at": "2024-01-01 12:00:00",
+    "photo": "data:image/png;base64,iVBORw0KGgo...",
+    "due_date": "2024-01-15",
+    "planned_date": "2024-01-10"
   }
 ]
 ```
@@ -38,13 +41,19 @@
 | title | string | 是 | 待办事项标题 |
 | description | string | 否 | 待办事项描述 |
 | priority | integer | 否 | 优先级（1=低，2=中，3=高），默认1 |
+| photo | string | 否 | 照片Base64编码 |
+| due_date | string | 否 | 截止日期（YYYY-MM-DD） |
+| planned_date | string | 否 | 计划完成日期（YYYY-MM-DD） |
 
 **示例**：
 ```json
 {
   "title": "完成作业",
   "description": "完成数学和英语作业",
-  "priority": 3
+  "priority": 3,
+  "photo": "data:image/png;base64,iVBORw0KGgo...",
+  "due_date": "2024-01-15",
+  "planned_date": "2024-01-10"
 }
 ```
 
@@ -56,7 +65,10 @@
   "description": "完成数学和英语作业",
   "completed": 0,
   "priority": 3,
-  "created_at": "2024-01-01 12:30:00"
+  "created_at": "2024-01-01 12:30:00",
+  "photo": "data:image/png;base64,iVBORw0KGgo...",
+  "due_date": "2024-01-15",
+  "planned_date": "2024-01-10"
 }
 ```
 
@@ -85,12 +97,17 @@
 | description | string | 否 | 待办事项描述 |
 | completed | boolean | 否 | 完成状态 |
 | priority | integer | 否 | 优先级 |
+| photo | string | 否 | 照片Base64编码 |
+| due_date | string | 否 | 截止日期（YYYY-MM-DD） |
+| planned_date | string | 否 | 计划完成日期（YYYY-MM-DD） |
 
 **示例**：
 ```json
 {
   "title": "完成作业（已修改）",
-  "completed": 1
+  "completed": 1,
+  "due_date": "2024-01-15",
+  "planned_date": "2024-01-10"
 }
 ```
 
@@ -102,7 +119,10 @@
   "description": "完成数学和英语作业",
   "completed": 1,
   "priority": 3,
-  "created_at": "2024-01-01 12:30:00"
+  "created_at": "2024-01-01 12:30:00",
+  "photo": "data:image/png;base64,iVBORw0KGgo...",
+  "due_date": "2024-01-15",
+  "planned_date": "2024-01-10"
 }
 ```
 
@@ -168,6 +188,33 @@
 }
 ```
 
+### 6. 批量删除待办事项
+
+**DELETE** `/api/todos/batch`
+
+批量删除多个待办事项。
+
+**请求体**：
+```json
+{
+  "ids": [1, 2, 3]
+}
+```
+
+**响应**（200 OK）：
+```json
+{
+  "message": "3 todos deleted successfully"
+}
+```
+
+**错误响应**（400 Bad Request）：
+```json
+{
+  "error": "IDs list is required"
+}
+```
+
 ## 数据模型
 
 ### Todo 表结构
@@ -180,6 +227,9 @@
 | completed | BOOLEAN | 完成状态（0=未完成，1=已完成） |
 | priority | INTEGER | 优先级（1=低，2=中，3=高） |
 | created_at | TIMESTAMP | 创建时间 |
+| photo | TEXT | 照片Base64编码 |
+| due_date | DATE | 截止日期 |
+| planned_date | DATE | 计划完成日期 |
 
 ## 状态码
 

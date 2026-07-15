@@ -19,12 +19,14 @@ export default function DecisionPage() {
   const [showResult, setShowResult] = useState(false);
   const [diceTransform, setDiceTransform] = useState('rotateX(0deg) rotateY(0deg)');
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [showQuote, setShowQuote] = useState(false);
   const router = useRouter();
 
   const rollDice = () => {
     if (isRolling) return;
     setIsRolling(true);
     setShowResult(false);
+    setShowQuote(false);
     setDiceResult(null);
     
     const randomX = Math.floor(Math.random() * 4) * 360 + (Math.random() > 0.5 ? 90 : 270);
@@ -36,6 +38,9 @@ export default function DecisionPage() {
       const result = Math.floor(Math.random() * 6) + 1;
       setDiceResult({ value: result, isEven: result % 2 === 0 });
       setShowResult(true);
+      setTimeout(() => {
+        setShowQuote(true);
+      }, 800);
       setIsRolling(false);
     }, 1500);
   };
@@ -44,6 +49,7 @@ export default function DecisionPage() {
     if (isRolling) return;
     setIsRolling(true);
     setShowResult(false);
+    setShowQuote(false);
     setNumberResult(null);
     setCountdown(10);
 
@@ -54,6 +60,9 @@ export default function DecisionPage() {
           const result = Math.floor(Math.random() * 10) + 1;
           setNumberResult({ value: result, isEven: result % 2 === 0 });
           setShowResult(true);
+          setTimeout(() => {
+            setShowQuote(true);
+          }, 800);
           setIsRolling(false);
           return null;
         }
@@ -68,6 +77,7 @@ export default function DecisionPage() {
 
   const handleRetry = () => {
     setShowResult(false);
+    setShowQuote(false);
     setDiceResult(null);
     setNumberResult(null);
     setDiceTransform('rotateX(0deg) rotateY(0deg)');
@@ -93,7 +103,7 @@ export default function DecisionPage() {
 
         <div className="flex justify-center gap-4 mb-12">
           <button
-            onClick={() => { setMode('dice'); setShowResult(false); }}
+            onClick={() => { setMode('dice'); setShowResult(false); setShowQuote(false); }}
             className={`px-6 py-3 rounded-full font-semibold transition-all duration-300 ${
               mode === 'dice' 
                 ? 'bg-white text-purple-700 shadow-lg scale-105' 
@@ -103,7 +113,7 @@ export default function DecisionPage() {
             🎲 摇骰子
           </button>
           <button
-            onClick={() => { setMode('number'); setShowResult(false); }}
+            onClick={() => { setMode('number'); setShowResult(false); setShowQuote(false); }}
             className={`px-6 py-3 rounded-full font-semibold transition-all duration-300 ${
               mode === 'number' 
                 ? 'bg-white text-purple-700 shadow-lg scale-105' 
@@ -238,6 +248,37 @@ export default function DecisionPage() {
           </div>
         )}
       </div>
+
+      {showQuote && (
+        <div 
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in"
+          onClick={() => setShowQuote(false)}
+        >
+          <div 
+            className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-8 max-w-md mx-4 shadow-2xl border border-white/10 animate-scale-in"
+            onClick={e => e.stopPropagation()}
+          >
+            <button 
+              onClick={() => setShowQuote(false)}
+              className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors"
+            >
+              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+            
+            <div className="text-center">
+              <div className="text-4xl mb-6">💭</div>
+              <blockquote className="text-xl text-white/90 italic mb-6 leading-relaxed">
+                "当曾小贤向天空抛硬币的时候，他其实那个时候已经不在乎硬币是正还是反。因为当硬币丢向空中的一瞬间，就已经知道你想要的是什么了。所以我们这个选择也是帮你确定你内心最真实的想法，给你一个助力，希望你能不忘初心。"
+              </blockquote>
+              <div className="w-16 h-0.5 bg-gradient-to-r from-purple-500 to-pink-500 mx-auto"></div>
+              <p className="text-white/50 text-sm mt-4">—— 来自《爱情公寓》的启示</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
