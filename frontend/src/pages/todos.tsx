@@ -12,7 +12,17 @@ interface Todo {
   photo: string;
   due_date: string;
   planned_date: string;
+  category: string;
 }
+
+const CATEGORIES = ['工作', '学习', '生活', '其他'];
+
+const CATEGORY_COLORS: Record<string, string> = {
+  '工作': 'bg-blue-500',
+  '学习': 'bg-green-500',
+  '生活': 'bg-orange-500',
+  '其他': 'bg-gray-500',
+};
 
 export default function TodosPage() {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -20,10 +30,14 @@ export default function TodosPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
-  const [newTodo, setNewTodo] = useState({ title: '', description: '', priority: 1, photo: '', due_date: '', planned_date: '' });
+  const [newTodo, setNewTodo] = useState({ title: '', description: '', priority: 1, photo: '', due_date: '', planned_date: '', category: '其他' });
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'created' | 'due' | 'priority'>('created');
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [showBatchDelete, setShowBatchDelete] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
   const router = useRouter();
 
   const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:5000/api';
@@ -35,6 +49,10 @@ export default function TodosPage() {
   useEffect(() => {
     setShowBatchDelete(selectedIds.length > 0);
   }, [selectedIds]);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', darkMode);
+  }, [darkMode]);
 
   const fetchTodos = async () => {
     setLoading(true);
@@ -51,7 +69,7 @@ export default function TodosPage() {
     if (!newTodo.title.trim()) return;
     try {
       await axios.post(`${API_BASE}/todos`, newTodo);
-      setNewTodo({ title: '', description: '', priority: 1, photo: '', due_date: '', planned_date: '' });
+      setNewTodo({ title: '', description: '', priority: 1, photo: '', due_date: '', planned_date: '', category: '其他' });
       setShowAddModal(false);
       fetchTodos();
     } catch (error) {
@@ -133,11 +151,49 @@ export default function TodosPage() {
     }
   };
 
-  const filteredTodos = todos.filter(todo => {
-    if (filter === 'active') return !todo.completed;
-    if (filter === 'completed') return todo.completed;
+  const exportToCSV = () => {
+    const headers = ['ID', '标题', '描述', '完成状态', '优先级', '分类', '截止日期', '计划日期', '创建时间'];
+    const rows = filteredTodos.map(todo => [
+      todo.id,
+      `"${todo.title.replace(/"/g, '""')}"`,
+      `"${todo.description.replace(/"/g, '""')}"`,
+      todo.completed ? '已完成' : '待完成',
+      todo.priority === 3 ? '高' : todo.priority === 2 ? '中' : '低',
+      todo.category,
+      todo.due_date || '',
+      todo.planned_date || '',
+      new Date(todo.created_at).toLocaleString('zh-CN')
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `todos_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
+  const getSortedTodos = (list: Todo[]) => {
+    return [...list].sort((a, b) => {
+      if (sortBy === 'priority') return b.priority - a.priority;
+      if (sortBy === 'due') {
+        if (!a.due_date) return 1;
+        if (!b.due_date) return -1;
+        return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+      }
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+  };
+
+  const filteredTodos = getSortedTodos(todos.filter(todo => {
+    if (filter === 'active' && todo.completed) return false;
+    if (filter === 'completed' && !todo.completed) return false;
+    if (categoryFilter !== 'all' && todo.category !== categoryFilter) return false;
+    if (searchQuery && !todo.title.toLowerCase().includes(searchQuery.toLowerCase()) && !todo.description.toLowerCase().includes(searchQuery.toLowerCase())) {
+      return false;
+    }
     return true;
-  });
+  }));
 
   const getPriorityColor = (priority: number) => {
     switch (priority) {
@@ -160,57 +216,199 @@ export default function TodosPage() {
     return new Date(dueDate) < new Date() && dueDate !== '';
   };
 
+  const stats = {
+    total: todos.length,
+    completed: todos.filter(t => t.completed).length,
+    active: todos.filter(t => !t.completed).length,
+    overdue: todos.filter(t => isOverdue(t.due_date) && !t.completed).length,
+    completionRate: todos.length > 0 ? Math.round((todos.filter(t => t.completed).length / todos.length) * 100) : 0,
+    byCategory: CATEGORIES.map(cat => ({
+      name: cat,
+      count: todos.filter(t => t.category === cat).length
+    }))
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900">
-      <header className="bg-white/5 backdrop-blur-sm border-b border-white/10 sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+    <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900' : 'bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50'}`}>
+      <header className={`backdrop-blur-sm border-b sticky top-0 z-50 transition-colors duration-300 ${darkMode ? 'bg-white/5 border-white/10' : 'bg-white/80 border-slate-200'}`}>
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg className={`w-8 h-8 transition-colors duration-300 ${darkMode ? 'text-white' : 'text-purple-600'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="10"/>
               <polyline points="12 6 12 12 16 14"/>
             </svg>
-            <h1 className="text-2xl font-bold text-white">待办清单</h1>
+            <h1 className={`text-2xl font-bold transition-colors duration-300 ${darkMode ? 'text-white' : 'text-slate-800'}`}>待办清单</h1>
           </div>
-          <button
-            onClick={() => router.push('/')}
-            className="text-white/70 hover:text-white transition-colors flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-            </svg>
-            返回首页
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className={`p-2 rounded-full transition-all duration-300 ${darkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+              title={darkMode ? '切换到浅色模式' : '切换到深色模式'}
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                {darkMode ? (
+                  <>
+                    <circle cx="12" cy="12" r="5"/>
+                    <line x1="12" y1="1" x2="12" y2="3"/>
+                    <line x1="12" y1="21" x2="12" y2="23"/>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                    <line x1="1" y1="12" x2="3" y2="12"/>
+                    <line x1="21" y1="12" x2="23" y2="12"/>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                  </>
+                ) : (
+                  <>
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                  </>
+                )}
+              </svg>
+            </button>
+            <button
+              onClick={() => router.push('/')}
+              className={`transition-colors flex items-center gap-2 ${darkMode ? 'text-white/70 hover:text-white' : 'text-slate-600 hover:text-slate-800'}`}
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+              </svg>
+              返回首页
+            </button>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-6 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex gap-2">
-            <button
-              onClick={() => setFilter('all')}
-              className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-                filter === 'all' ? 'bg-white text-purple-700' : 'bg-white/10 text-white/70 hover:bg-white/20'
-              }`}
-            >
-              全部 ({todos.length})
-            </button>
-            <button
-              onClick={() => setFilter('active')}
-              className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-                filter === 'active' ? 'bg-white text-purple-700' : 'bg-white/10 text-white/70 hover:bg-white/20'
-              }`}
-            >
-              待完成 ({todos.filter(t => !t.completed).length})
-            </button>
-            <button
-              onClick={() => setFilter('completed')}
-              className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-                filter === 'completed' ? 'bg-white text-purple-700' : 'bg-white/10 text-white/70 hover:bg-white/20'
-              }`}
-            >
-              已完成 ({todos.filter(t => t.completed).length})
-            </button>
+      <main className="max-w-6xl mx-auto px-6 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className={`p-4 rounded-xl transition-colors duration-300 ${darkMode ? 'bg-white/5' : 'bg-white shadow-sm'}`}>
+            <p className={`text-sm mb-1 ${darkMode ? 'text-white/50' : 'text-slate-500'}`}>总任务数</p>
+            <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>{stats.total}</p>
           </div>
+          <div className={`p-4 rounded-xl transition-colors duration-300 ${darkMode ? 'bg-white/5' : 'bg-white shadow-sm'}`}>
+            <p className={`text-sm mb-1 ${darkMode ? 'text-white/50' : 'text-slate-500'}`}>待完成</p>
+            <p className={`text-2xl font-bold text-blue-400`}>{stats.active}</p>
+          </div>
+          <div className={`p-4 rounded-xl transition-colors duration-300 ${darkMode ? 'bg-white/5' : 'bg-white shadow-sm'}`}>
+            <p className={`text-sm mb-1 ${darkMode ? 'text-white/50' : 'text-slate-500'}`}>已完成</p>
+            <p className={`text-2xl font-bold text-green-400`}>{stats.completed}</p>
+          </div>
+          <div className={`p-4 rounded-xl transition-colors duration-300 ${darkMode ? 'bg-white/5' : 'bg-white shadow-sm'}`}>
+            <p className={`text-sm mb-1 ${darkMode ? 'text-white/50' : 'text-slate-500'}`}>完成率</p>
+            <p className={`text-2xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>{stats.completionRate}%</p>
+          </div>
+        </div>
+
+        {stats.overdue > 0 && (
+          <div className={`mb-6 p-4 rounded-xl flex items-center justify-between transition-colors duration-300 ${darkMode ? 'bg-red-500/10 border border-red-500/20' : 'bg-red-50 border border-red-200'}`}>
+            <span className={`flex items-center gap-2 ${darkMode ? 'text-red-400' : 'text-red-600'}`}>
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+              有 {stats.overdue} 个任务已逾期，请尽快处理！
+            </span>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
+          {stats.byCategory.map(cat => (
+            <div key={cat.name} className={`p-3 rounded-lg transition-colors duration-300 ${darkMode ? 'bg-white/5' : 'bg-white shadow-sm'}`}>
+              <div className="flex items-center justify-between">
+                <span className={`text-sm ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>{cat.name}</span>
+                <span className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-slate-800'}`}>{cat.count}</span>
+              </div>
+              <div className={`mt-2 h-1.5 rounded-full overflow-hidden ${darkMode ? 'bg-white/10' : 'bg-slate-200'}`}>
+                <div 
+                  className={`h-full rounded-full transition-all duration-500 ${CATEGORY_COLORS[cat.name]}`}
+                  style={{ width: stats.total > 0 ? `${(cat.count / stats.total) * 100}%` : '0%' }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+            <div className="relative flex-1 sm:w-auto">
+              <svg className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${darkMode ? 'text-white/30' : 'text-slate-400'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="搜索待办事项..."
+                className={`w-full sm:w-64 pl-10 pr-4 py-2 rounded-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-purple-500 ${darkMode ? 'bg-white/10 border border-white/20 text-white placeholder-white/30' : 'bg-white border border-slate-200 text-slate-800 placeholder-slate-400'}`}
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className={`px-3 py-2 rounded-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-purple-500 ${darkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-white border border-slate-200 text-slate-800'}`}
+            >
+              <option value="all">全部分类</option>
+              {CATEGORIES.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'created' | 'due' | 'priority')}
+              className={`px-3 py-2 rounded-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-purple-500 ${darkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-white border border-slate-200 text-slate-800'}`}
+            >
+              <option value="created">按创建时间</option>
+              <option value="due">按截止日期</option>
+              <option value="priority">按优先级</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2 mb-6">
+          <button
+            onClick={() => setFilter('all')}
+            className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+              filter === 'all' 
+                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' 
+                : darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            全部 ({todos.length})
+          </button>
+          <button
+            onClick={() => setFilter('active')}
+            className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+              filter === 'active' 
+                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' 
+                : darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            待完成 ({stats.active})
+          </button>
+          <button
+            onClick={() => setFilter('completed')}
+            className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+              filter === 'completed' 
+                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' 
+                : darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            已完成 ({stats.completed})
+          </button>
+          <div className="flex-1"></div>
+          <button
+            onClick={exportToCSV}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all ${darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            导出CSV
+          </button>
           <button
             onClick={() => setShowAddModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full font-semibold hover:shadow-lg hover:shadow-purple-500/30 transition-all"
@@ -223,12 +421,12 @@ export default function TodosPage() {
         </div>
 
         {showBatchDelete && (
-          <div className="mb-4 p-4 bg-white/10 rounded-xl flex items-center justify-between">
-            <span className="text-white">已选中 {selectedIds.length} 项</span>
+          <div className={`mb-4 p-4 rounded-xl flex items-center justify-between transition-colors duration-300 ${darkMode ? 'bg-white/10' : 'bg-white shadow-sm'}`}>
+            <span className={darkMode ? 'text-white' : 'text-slate-800'}>已选中 {selectedIds.length} 项</span>
             <div className="flex gap-3">
               <button
                 onClick={() => setSelectedIds([])}
-                className="px-4 py-2 bg-white/20 text-white rounded-lg font-semibold hover:bg-white/30 transition-all"
+                className={`px-4 py-2 rounded-lg font-semibold transition-all ${darkMode ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
               >
                 取消选择
               </button>
@@ -249,16 +447,16 @@ export default function TodosPage() {
 
         {loading ? (
           <div className="flex justify-center items-center py-12">
-            <div className="w-8 h-8 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
+            <div className={`w-8 h-8 border-4 rounded-full animate-spin ${darkMode ? 'border-white/20 border-t-white' : 'border-slate-200 border-t-purple-500'}`}></div>
           </div>
         ) : filteredTodos.length === 0 ? (
           <div className="text-center py-16">
-            <svg className="w-16 h-16 text-white/30 mx-auto mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg className={`w-16 h-16 mx-auto mb-4 transition-colors duration-300 ${darkMode ? 'text-white/30' : 'text-slate-300'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <circle cx="12" cy="12" r="10"/>
               <path d="M8 12h8"/>
               <path d="M12 8v8"/>
             </svg>
-            <p className="text-white/50 text-lg">暂无待办事项</p>
+            <p className={`text-lg transition-colors duration-300 ${darkMode ? 'text-white/50' : 'text-slate-500'}`}>暂无待办事项</p>
             <button
               onClick={() => setShowAddModal(true)}
               className="mt-4 text-purple-400 hover:text-purple-300 font-semibold"
@@ -274,7 +472,7 @@ export default function TodosPage() {
                 className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
                   selectedIds.length === filteredTodos.length && filteredTodos.length > 0
                     ? 'bg-purple-500 border-purple-500'
-                    : 'border-white/30 hover:border-white'
+                    : darkMode ? 'border-white/30 hover:border-white' : 'border-slate-300 hover:border-slate-500'
                 }`}
               >
                 {selectedIds.length === filteredTodos.length && filteredTodos.length > 0 && (
@@ -283,14 +481,14 @@ export default function TodosPage() {
                   </svg>
                 )}
               </button>
-              <span className="text-white/50 text-sm">全选</span>
+              <span className={darkMode ? 'text-white/50' : 'text-slate-500'} className="text-sm">全选</span>
             </div>
             {filteredTodos.map(todo => (
               <div
                 key={todo.id}
-                className={`glass-effect rounded-xl p-4 transition-all hover:bg-white/10 ${
+                className={`rounded-xl p-4 transition-all hover:shadow-md ${
                   todo.completed ? 'opacity-60' : ''
-                } ${selectedIds.includes(todo.id) ? 'ring-2 ring-purple-500' : ''}`}
+                } ${selectedIds.includes(todo.id) ? 'ring-2 ring-purple-500' : ''} ${darkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-white hover:bg-slate-50'}`}
               >
                 <div className="flex items-start gap-4">
                   <button
@@ -298,7 +496,7 @@ export default function TodosPage() {
                     className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
                       selectedIds.includes(todo.id)
                         ? 'bg-purple-500 border-purple-500'
-                        : 'border-white/30 hover:border-white'
+                        : darkMode ? 'border-white/30 hover:border-white' : 'border-slate-300 hover:border-slate-500'
                     }`}
                   >
                     {selectedIds.includes(todo.id) && (
@@ -312,7 +510,7 @@ export default function TodosPage() {
                     className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
                       todo.completed
                         ? 'bg-green-500 border-green-500'
-                        : 'border-white/30 hover:border-white'
+                        : darkMode ? 'border-white/30 hover:border-white' : 'border-slate-300 hover:border-slate-500'
                     }`}
                   >
                     {todo.completed && (
@@ -322,14 +520,19 @@ export default function TodosPage() {
                     )}
                   </button>
                   <div className="flex-1 min-w-0">
-                    <h3 className={`font-semibold text-lg ${todo.completed ? 'line-through text-white/50' : 'text-white'}`}>
-                      {todo.title}
+                    <div className="flex items-center gap-2">
+                      <h3 className={`font-semibold text-lg ${todo.completed ? (darkMode ? 'line-through text-white/50' : 'line-through text-slate-400') : (darkMode ? 'text-white' : 'text-slate-800')}`}>
+                        {todo.title}
+                      </h3>
                       {isOverdue(todo.due_date) && !todo.completed && (
-                        <span className="ml-2 text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">已逾期</span>
+                        <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">已逾期</span>
                       )}
-                    </h3>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${CATEGORY_COLORS[todo.category] || 'bg-gray-500'} text-white`}>
+                        {todo.category}
+                      </span>
+                    </div>
                     {todo.description && (
-                      <p className="text-white/60 mt-1 line-clamp-2">{todo.description}</p>
+                      <p className={darkMode ? 'text-white/60 mt-1 line-clamp-2' : 'text-slate-600 mt-1 line-clamp-2'}>{todo.description}</p>
                     )}
                     {todo.photo && (
                       <div className="mt-2">
@@ -345,16 +548,16 @@ export default function TodosPage() {
                         {getPriorityText(todo.priority)}优先级
                       </span>
                       {todo.due_date && (
-                        <span className={`text-xs px-2 py-1 rounded-full ${isOverdue(todo.due_date) && !todo.completed ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                        <span className={`text-xs px-2 py-1 rounded-full ${isOverdue(todo.due_date) && !todo.completed ? 'bg-red-500/20 text-red-400' : (darkMode ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600')}`}>
                           📅 截止: {new Date(todo.due_date).toLocaleDateString('zh-CN')}
                         </span>
                       )}
                       {todo.planned_date && (
-                        <span className="text-xs px-2 py-1 rounded-full bg-orange-500/20 text-orange-400">
+                        <span className={darkMode ? 'text-xs px-2 py-1 rounded-full bg-orange-500/20 text-orange-400' : 'text-xs px-2 py-1 rounded-full bg-orange-100 text-orange-600'}>
                           🗓️ 计划: {new Date(todo.planned_date).toLocaleDateString('zh-CN')}
                         </span>
                       )}
-                      <span className="text-white/40 text-xs">
+                      <span className={darkMode ? 'text-white/40 text-xs' : 'text-slate-400 text-xs'}>
                         创建于: {new Date(todo.created_at).toLocaleDateString('zh-CN')}
                       </span>
                     </div>
@@ -362,7 +565,7 @@ export default function TodosPage() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => { setEditingTodo(todo); setShowEditModal(true); }}
-                      className="p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                      className={`p-2 rounded-lg transition-all ${darkMode ? 'text-white/50 hover:text-white hover:bg-white/10' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
                     >
                       <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
@@ -371,7 +574,7 @@ export default function TodosPage() {
                     </button>
                     <button
                       onClick={() => handleDeleteTodo(todo.id)}
-                      className="p-2 text-white/50 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                      className={`p-2 rounded-lg transition-all ${darkMode ? 'text-white/50 hover:text-red-400 hover:bg-red-500/10' : 'text-slate-500 hover:text-red-500 hover:bg-red-50'}`}
                     >
                       <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M3 6h18"/>
@@ -389,36 +592,54 @@ export default function TodosPage() {
 
       {showAddModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-          <div className="bg-slate-800 rounded-2xl w-full max-w-md p-6 animate-scale-in max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold text-white mb-4">添加新待办</h2>
+          <div className={`rounded-2xl w-full max-w-md p-6 animate-scale-in max-h-[90vh] overflow-y-auto transition-colors duration-300 ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
+            <h2 className={`text-2xl font-bold mb-4 transition-colors duration-300 ${darkMode ? 'text-white' : 'text-slate-800'}`}>添加新待办</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-white/70 text-sm mb-2">标题 *</label>
+                <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>标题 *</label>
                 <input
                   type="text"
                   value={newTodo.title}
                   onChange={(e) => setNewTodo({ ...newTodo, title: e.target.value })}
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-purple-500"
+                  className={`w-full px-4 py-3 rounded-lg placeholder-focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${darkMode ? 'bg-white/10 border border-white/20 text-white placeholder-white/30' : 'bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400'}`}
                   placeholder="输入待办事项标题"
                 />
               </div>
               <div>
-                <label className="block text-white/70 text-sm mb-2">描述</label>
+                <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>描述</label>
                 <textarea
                   value={newTodo.description}
                   onChange={(e) => setNewTodo({ ...newTodo, description: e.target.value })}
                   rows={3}
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-purple-500 resize-none"
+                  className={`w-full px-4 py-3 rounded-lg resize-none focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${darkMode ? 'bg-white/10 border border-white/20 text-white placeholder-white/30' : 'bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400'}`}
                   placeholder="输入待办事项描述"
                 />
               </div>
               <div>
-                <label className="block text-white/70 text-sm mb-2">添加照片</label>
+                <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>分类</label>
+                <div className="flex flex-wrap gap-2">
+                  {CATEGORIES.map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setNewTodo({ ...newTodo, category: cat })}
+                      className={`px-3 py-2 rounded-lg font-semibold text-sm transition-all ${
+                        newTodo.category === cat
+                          ? `${CATEGORY_COLORS[cat]} text-white`
+                          : darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>添加照片</label>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={(e) => handlePhotoUpload(e, true)}
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-purple-500"
+                  className={`w-full px-4 py-3 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${darkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'}`}
                 />
                 {newTodo.photo && (
                   <img 
@@ -430,26 +651,26 @@ export default function TodosPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-white/70 text-sm mb-2">截止日期</label>
+                  <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>截止日期</label>
                   <input
                     type="date"
                     value={newTodo.due_date}
                     onChange={(e) => setNewTodo({ ...newTodo, due_date: e.target.value })}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-purple-500"
+                    className={`w-full px-4 py-3 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${darkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'}`}
                   />
                 </div>
                 <div>
-                  <label className="block text-white/70 text-sm mb-2">计划完成日期</label>
+                  <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>计划完成日期</label>
                   <input
                     type="date"
                     value={newTodo.planned_date}
                     onChange={(e) => setNewTodo({ ...newTodo, planned_date: e.target.value })}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-purple-500"
+                    className={`w-full px-4 py-3 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${darkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'}`}
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-white/70 text-sm mb-2">优先级</label>
+                <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>优先级</label>
                 <div className="flex gap-2">
                   {[1, 2, 3].map(p => (
                     <button
@@ -458,7 +679,7 @@ export default function TodosPage() {
                       className={`flex-1 py-2 rounded-lg font-semibold text-sm transition-all ${
                         newTodo.priority === p
                           ? `${getPriorityColor(p)} text-white`
-                          : 'bg-white/10 text-white/70 hover:bg-white/20'
+                          : darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
                       {getPriorityText(p)}优先级
@@ -470,7 +691,7 @@ export default function TodosPage() {
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => setShowAddModal(false)}
-                className="px-6 py-2 bg-white/10 text-white rounded-lg font-semibold hover:bg-white/20 transition-all"
+                className={`px-6 py-2 rounded-lg font-semibold transition-all ${darkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
               >
                 取消
               </button>
@@ -488,34 +709,52 @@ export default function TodosPage() {
 
       {showEditModal && editingTodo && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-          <div className="bg-slate-800 rounded-2xl w-full max-w-md p-6 animate-scale-in max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold text-white mb-4">编辑待办</h2>
+          <div className={`rounded-2xl w-full max-w-md p-6 animate-scale-in max-h-[90vh] overflow-y-auto transition-colors duration-300 ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
+            <h2 className={`text-2xl font-bold mb-4 transition-colors duration-300 ${darkMode ? 'text-white' : 'text-slate-800'}`}>编辑待办</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-white/70 text-sm mb-2">标题 *</label>
+                <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>标题 *</label>
                 <input
                   type="text"
                   value={editingTodo.title}
                   onChange={(e) => setEditingTodo({ ...editingTodo, title: e.target.value })}
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-purple-500"
+                  className={`w-full px-4 py-3 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${darkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'}`}
                 />
               </div>
               <div>
-                <label className="block text-white/70 text-sm mb-2">描述</label>
+                <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>描述</label>
                 <textarea
                   value={editingTodo.description}
                   onChange={(e) => setEditingTodo({ ...editingTodo, description: e.target.value })}
                   rows={3}
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-purple-500 resize-none"
+                  className={`w-full px-4 py-3 rounded-lg resize-none focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${darkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'}`}
                 />
               </div>
               <div>
-                <label className="block text-white/70 text-sm mb-2">添加照片</label>
+                <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>分类</label>
+                <div className="flex flex-wrap gap-2">
+                  {CATEGORIES.map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setEditingTodo({ ...editingTodo, category: cat })}
+                      className={`px-3 py-2 rounded-lg font-semibold text-sm transition-all ${
+                        editingTodo.category === cat
+                          ? `${CATEGORY_COLORS[cat]} text-white`
+                          : darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>添加照片</label>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={(e) => handlePhotoUpload(e, false)}
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-purple-500"
+                  className={`w-full px-4 py-3 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${darkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'}`}
                 />
                 {editingTodo.photo && (
                   <img 
@@ -527,26 +766,26 @@ export default function TodosPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-white/70 text-sm mb-2">截止日期</label>
+                  <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>截止日期</label>
                   <input
                     type="date"
                     value={editingTodo.due_date}
                     onChange={(e) => setEditingTodo({ ...editingTodo, due_date: e.target.value })}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-purple-500"
+                    className={`w-full px-4 py-3 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${darkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'}`}
                   />
                 </div>
                 <div>
-                  <label className="block text-white/70 text-sm mb-2">计划完成日期</label>
+                  <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>计划完成日期</label>
                   <input
                     type="date"
                     value={editingTodo.planned_date}
                     onChange={(e) => setEditingTodo({ ...editingTodo, planned_date: e.target.value })}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:border-purple-500"
+                    className={`w-full px-4 py-3 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${darkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'}`}
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-white/70 text-sm mb-2">优先级</label>
+                <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>优先级</label>
                 <div className="flex gap-2">
                   {[1, 2, 3].map(p => (
                     <button
@@ -555,7 +794,7 @@ export default function TodosPage() {
                       className={`flex-1 py-2 rounded-lg font-semibold text-sm transition-all ${
                         editingTodo.priority === p
                           ? `${getPriorityColor(p)} text-white`
-                          : 'bg-white/10 text-white/70 hover:bg-white/20'
+                          : darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
                       {getPriorityText(p)}优先级
@@ -564,13 +803,13 @@ export default function TodosPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-white/70 text-sm mb-2">完成状态</label>
+                <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>完成状态</label>
                 <button
                   onClick={() => setEditingTodo({ ...editingTodo, completed: !editingTodo.completed })}
                   className={`w-full py-2 rounded-lg font-semibold text-sm transition-all ${
                     editingTodo.completed
                       ? 'bg-green-500 text-white'
-                      : 'bg-white/10 text-white/70 hover:bg-white/20'
+                      : darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
                   {editingTodo.completed ? '已完成' : '待完成'}
@@ -580,7 +819,7 @@ export default function TodosPage() {
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => { setShowEditModal(false); setEditingTodo(null); }}
-                className="px-6 py-2 bg-white/10 text-white rounded-lg font-semibold hover:bg-white/20 transition-all"
+                className={`px-6 py-2 rounded-lg font-semibold transition-all ${darkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
               >
                 取消
               </button>

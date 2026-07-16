@@ -93,13 +93,17 @@ npm run dev
 
 ## 📡 API 接口
 
-| 方法 | 路径 | 描述 |
-|------|------|------|
-| GET | `/api/todos` | 获取所有待办事项 |
-| POST | `/api/todos` | 创建新待办事项 |
-| PUT | `/api/todos/:id` | 更新待办事项 |
-| DELETE | `/api/todos/:id` | 删除待办事项 |
-| POST | `/api/todos/:id/complete` | 切换完成状态 |
+### 本地接口地址
+所有接口基础路径：`http://localhost:5000/api`
+
+| 方法 | 路径 | 描述 | 测试地址 |
+|------|------|------|----------|
+| GET | `/api/todos` | 获取所有待办事项 | http://localhost:5000/api/todos |
+| POST | `/api/todos` | 创建新待办事项 | http://localhost:5000/api/todos |
+| PUT | `/api/todos/:id` | 更新待办事项 | http://localhost:5000/api/todos/1 |
+| DELETE | `/api/todos/:id` | 删除待办事项 | http://localhost:5000/api/todos/1 |
+| DELETE | `/api/todos/batch` | 批量删除待办 | http://localhost:5000/api/todos/batch |
+| POST | `/api/todos/:id/complete` | 切换完成状态 | http://localhost:5000/api/todos/1/complete |
 
 ### 请求示例
 

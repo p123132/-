@@ -26,7 +26,8 @@ def init_db():
                 priority INTEGER DEFAULT 1,
                 photo TEXT,
                 due_date DATE,
-                planned_date DATE
+                planned_date DATE,
+                category TEXT DEFAULT '其他'
             )
         ''')
         try:
@@ -39,6 +40,10 @@ def init_db():
             pass
         try:
             conn.execute('ALTER TABLE todos ADD COLUMN planned_date DATE')
+        except sqlite3.OperationalError:
+            pass
+        try:
+            conn.execute('ALTER TABLE todos ADD COLUMN category TEXT DEFAULT "其他"')
         except sqlite3.OperationalError:
             pass
     conn.close()
@@ -58,10 +63,11 @@ def create_todo():
     
     conn = get_db()
     cursor = conn.execute('''
-        INSERT INTO todos (title, description, priority, photo, due_date, planned_date)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO todos (title, description, priority, photo, due_date, planned_date, category)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     ''', (data['title'], data.get('description', ''), data.get('priority', 1),
-          data.get('photo', ''), data.get('due_date', ''), data.get('planned_date', '')))
+          data.get('photo', ''), data.get('due_date', ''), data.get('planned_date', ''),
+          data.get('category', '其他')))
     conn.commit()
     todo = conn.execute('SELECT * FROM todos WHERE id = ?', (cursor.lastrowid,)).fetchone()
     conn.close()
@@ -77,12 +83,12 @@ def update_todo(id):
         return jsonify({'error': 'Todo not found'}), 404
     
     conn.execute('''
-        UPDATE todos SET title = ?, description = ?, completed = ?, priority = ?, photo = ?, due_date = ?, planned_date = ?
+        UPDATE todos SET title = ?, description = ?, completed = ?, priority = ?, photo = ?, due_date = ?, planned_date = ?, category = ?
         WHERE id = ?
     ''', (data.get('title', todo['title']), data.get('description', todo['description']), 
           data.get('completed', todo['completed']), data.get('priority', todo['priority']),
           data.get('photo', todo['photo']), data.get('due_date', todo['due_date']),
-          data.get('planned_date', todo['planned_date']), id))
+          data.get('planned_date', todo['planned_date']), data.get('category', todo['category']), id))
     conn.commit()
     updated_todo = conn.execute('SELECT * FROM todos WHERE id = ?', (id,)).fetchone()
     conn.close()
