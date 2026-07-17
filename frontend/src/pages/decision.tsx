@@ -20,7 +20,17 @@ export default function DecisionPage() {
   const [diceTransform, setDiceTransform] = useState('rotateX(0deg) rotateY(0deg)');
   const [countdown, setCountdown] = useState<number | null>(null);
   const [showQuote, setShowQuote] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login');
+    } else {
+      setIsLoading(false);
+    }
+  }, []);
 
   const rollDice = () => {
     if (isRolling) return;
@@ -88,6 +98,14 @@ export default function DecisionPage() {
       ? { title: '命运召唤！', desc: '是时候行动了，快去完成你的待办事项！', color: 'from-green-400 to-emerald-500', icon: 'check' }
       : { title: '休息一下', desc: '今天先放松一下，明天再继续努力！', color: 'from-orange-400 to-red-500', icon: 'coffee' };
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col items-center justify-center relative overflow-hidden">

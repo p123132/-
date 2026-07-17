@@ -4,11 +4,18 @@ import { useRouter } from 'next/router';
 export default function WelcomePage() {
   const [showContent, setShowContent] = useState(false);
   const [showButton, setShowButton] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     const timer1 = setTimeout(() => setShowContent(true), 300);
     const timer2 = setTimeout(() => setShowButton(true), 1200);
+    
+    const token = localStorage.getItem('token');
+    if (token) {
+      setIsLoggedIn(true);
+    }
+    
     return () => {
       clearTimeout(timer1);
       clearTimeout(timer2);
@@ -16,7 +23,11 @@ export default function WelcomePage() {
   }, []);
 
   const handleStart = () => {
-    router.push('/decision');
+    if (isLoggedIn) {
+      router.push('/decision');
+    } else {
+      router.push('/login');
+    }
   };
 
   return (
@@ -69,7 +80,7 @@ export default function WelcomePage() {
                 <path d="M5 12h14"/>
                 <path d="m12 5 7 7-7 7"/>
               </svg>
-              开始冒险
+              {isLoggedIn ? '开始冒险' : '登录/注册'}
             </span>
             <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             <span className="absolute inset-0 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -77,9 +88,27 @@ export default function WelcomePage() {
                 <path d="M5 12h14"/>
                 <path d="m12 5 7 7-7 7"/>
               </svg>
-              开始冒险
+              {isLoggedIn ? '开始冒险' : '登录/注册'}
             </span>
           </button>
+
+          {!isLoggedIn && (
+            <div className="mt-6 flex justify-center gap-4">
+              <a 
+                href="/login" 
+                className="text-white/70 hover:text-white transition-colors font-medium"
+              >
+                已有账户？登录
+              </a>
+              <span className="text-white/30">|</span>
+              <a 
+                href="/register" 
+                className="text-white/70 hover:text-white transition-colors font-medium"
+              >
+                新用户？注册
+              </a>
+            </div>
+          )}
         </div>
       </div>
 

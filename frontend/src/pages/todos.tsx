@@ -15,6 +15,13 @@ interface Todo {
   category: string;
 }
 
+interface User {
+  id: number;
+  username: string;
+  email: string;
+  created_at: string;
+}
+
 const CATEGORIES = ['工作', '学习', '生活', '其他'];
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -38,11 +45,26 @@ export default function TodosPage() {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [showBatchDelete, setShowBatchDelete] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const router = useRouter();
 
   const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:5000/api';
 
   useEffect(() => {
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+    
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    if (userData) {
+      setUser(JSON.parse(userData));
+    }
+
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     fetchTodos();
   }, []);
 
@@ -59,10 +81,22 @@ export default function TodosPage() {
     try {
       const response = await axios.get(`${API_BASE}/todos`);
       setTodos(response.data);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        router.push('/login');
+      }
       console.error('Failed to fetch todos:', error);
     }
     setLoading(false);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    delete axios.defaults.headers.common['Authorization'];
+    router.push('/login');
   };
 
   const handleAddTodo = async () => {
@@ -274,6 +308,41 @@ export default function TodosPage() {
               </svg>
               返回首页
             </button>
+            {user && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${darkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                >
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${darkMode ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-600'}`}>
+                    {user.username.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-sm font-medium">{user.username}</span>
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="m6 9 6 6 6-6"/>
+                  </svg>
+                </button>
+                {showUserMenu && (
+                  <div className={`absolute right-0 mt-2 w-48 rounded-lg shadow-lg overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-slate-800 border border-white/10' : 'bg-white border border-slate-200'}`}>
+                    <div className={`px-4 py-3 border-b ${darkMode ? 'border-white/10' : 'border-slate-200'}`}>
+                      <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-slate-800'}`}>{user.username}</p>
+                      <p className={`text-xs ${darkMode ? 'text-white/50' : 'text-slate-500'}`}>{user.email}</p>
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className={`w-full px-4 py-3 flex items-center gap-2 text-left transition-colors ${darkMode ? 'text-red-400 hover:bg-white/10' : 'text-red-500 hover:bg-red-50'}`}
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                      </svg>
+                      退出登录
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </header>
