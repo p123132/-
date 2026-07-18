@@ -9,7 +9,7 @@ import uuid
 
 static_dir = os.environ.get('STATIC_DIR', os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frontend', 'out'))
 app = Flask(__name__, static_folder=static_dir, static_url_path='')
-CORS(app)
+CORS(app, origins=['http://localhost:3000', 'http://localhost:5000', 'https://todo-adventure.vercel.app', '*'])
 
 DATABASE = os.environ.get('TODO_DB_PATH', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'todos.db'))
 SECRET_KEY = 'your-secret-key-change-in-production'

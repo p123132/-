@@ -1,0 +1,13 @@
+{
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/out",
+  "env": {
+    "NEXT_PUBLIC_API_BASE": "/api"
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://todo-adventure-backend.onrender.com/api/$1"
+    }
+  ]
+}
