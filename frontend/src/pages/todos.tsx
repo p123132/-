@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/router';
+import Navbar from '../components/Navbar';
 
 interface Todo {
   id: number;
@@ -19,7 +20,13 @@ interface User {
   id: number;
   username: string;
   email: string;
+  avatar: string;
   created_at: string;
+}
+
+interface Template {
+  name: string;
+  items: string[];
 }
 
 const CATEGORIES = ['工作', '学习', '生活', '其他'];
@@ -47,9 +54,14 @@ export default function TodosPage() {
   const [darkMode, setDarkMode] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [templates, setTemplates] = useState<Record<string, Template>>({});
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
+  const [showShareSuccess, setShowShareSuccess] = useState(false);
+  const [showNotificationPermission, setShowNotificationPermission] = useState(false);
   const router = useRouter();
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:5000/api';
+  const API_BASE = '/api';
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -66,7 +78,16 @@ export default function TodosPage() {
 
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     fetchTodos();
+    fetchTemplates();
+    checkNotificationPermission();
   }, []);
+
+  useEffect(() => {
+    if (router.query.add === 'true') {
+      setShowAddModal(true);
+      router.push('/todos');
+    }
+  }, [router.query.add]);
 
   useEffect(() => {
     setShowBatchDelete(selectedIds.length > 0);
@@ -170,6 +191,77 @@ export default function TodosPage() {
     reader.readAsDataURL(file);
   };
 
+  const fetchTemplates = async () => {
+    try {
+      const response = await axios.get(`${API_BASE}/templates`);
+      setTemplates(response.data);
+    } catch (error) {
+      console.error('Failed to fetch templates:', error);
+    }
+  };
+
+  const applyTemplate = async (templateName: string) => {
+    try {
+      await axios.post(`${API_BASE}/templates/${templateName}/apply`);
+      setShowTemplateModal(false);
+      fetchTodos();
+    } catch (error) {
+      console.error('Failed to apply template:', error);
+    }
+  };
+
+  const handleShareTodo = async (todoId: number) => {
+    try {
+      const response = await axios.post(`${API_BASE}/todos/${todoId}/share`);
+      setShareUrl(response.data.share_url);
+      setShowShareSuccess(true);
+      navigator.clipboard.writeText(response.data.share_url);
+    } catch (error) {
+      console.error('Failed to share todo:', error);
+    }
+  };
+
+  const checkNotificationPermission = () => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      setShowNotificationPermission(true);
+    }
+  };
+
+  const requestNotificationPermission = () => {
+    if ('Notification' in window) {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          new Notification('通知已开启', { body: '你将收到待办任务的提醒通知' });
+          checkOverdueTasks();
+        }
+        setShowNotificationPermission(false);
+      });
+    }
+  };
+
+  const checkOverdueTasks = () => {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      const overdueTasks = todos.filter(t => isOverdue(t.due_date) && !t.completed);
+      if (overdueTasks.length > 0) {
+        overdueTasks.slice(0, 3).forEach((task, index) => {
+          setTimeout(() => {
+            new Notification('任务逾期提醒', {
+              body: `「${task.title}」已逾期，请尽快处理！`,
+              icon: '/favicon.ico'
+            });
+          }, index * 1000);
+        });
+      }
+    }
+  };
+
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      const interval = setInterval(checkOverdueTasks, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [todos]);
+
   const toggleSelect = (id: number) => {
     setSelectedIds(prev => 
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
@@ -264,131 +356,107 @@ export default function TodosPage() {
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900' : 'bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50'}`}>
-      <header className={`backdrop-blur-sm border-b sticky top-0 z-50 transition-colors duration-300 ${darkMode ? 'bg-white/5 border-white/10' : 'bg-white/80 border-slate-200'}`}>
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <svg className={`w-8 h-8 transition-colors duration-300 ${darkMode ? 'text-white' : 'text-purple-600'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10"/>
-              <polyline points="12 6 12 12 16 14"/>
+      <Navbar />
+      
+      {showNotificationPermission && (
+        <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-4 rounded-xl flex items-center gap-4 transition-colors duration-300 ${darkMode ? 'bg-slate-800 border border-white/10' : 'bg-white shadow-lg'}`}>
+          <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+            <svg className="w-5 h-5 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
             </svg>
-            <h1 className={`text-2xl font-bold transition-colors duration-300 ${darkMode ? 'text-white' : 'text-slate-800'}`}>待办清单</h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div>
+            <p className={`font-semibold ${darkMode ? 'text-white' : 'text-slate-800'}`}>启用浏览器通知</p>
+            <p className={`text-sm ${darkMode ? 'text-white/60' : 'text-slate-500'}`}>接收待办任务到期提醒</p>
+          </div>
+          <div className="flex gap-2">
             <button
-              onClick={() => setDarkMode(!darkMode)}
-              className={`p-2 rounded-full transition-all duration-300 ${darkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-              title={darkMode ? '切换到浅色模式' : '切换到深色模式'}
+              onClick={() => setShowNotificationPermission(false)}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
             >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                {darkMode ? (
-                  <>
-                    <circle cx="12" cy="12" r="5"/>
-                    <line x1="12" y1="1" x2="12" y2="3"/>
-                    <line x1="12" y1="21" x2="12" y2="23"/>
-                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                    <line x1="1" y1="12" x2="3" y2="12"/>
-                    <line x1="21" y1="12" x2="23" y2="12"/>
-                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                  </>
-                ) : (
-                  <>
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                  </>
-                )}
-              </svg>
+              稍后
             </button>
             <button
-              onClick={() => router.push('/')}
-              className={`transition-colors flex items-center gap-2 ${darkMode ? 'text-white/70 hover:text-white' : 'text-slate-600 hover:text-slate-800'}`}
+              onClick={requestNotificationPermission}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-semibold hover:bg-blue-600 transition-all"
             >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-              </svg>
-              返回首页
+              允许
             </button>
-            {user && (
-              <div className="relative">
-                <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${darkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-                >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${darkMode ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-600'}`}>
-                    {user.username.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="text-sm font-medium">{user.username}</span>
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="m6 9 6 6 6-6"/>
-                  </svg>
-                </button>
-                {showUserMenu && (
-                  <div className={`absolute right-0 mt-2 w-48 rounded-lg shadow-lg overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-slate-800 border border-white/10' : 'bg-white border border-slate-200'}`}>
-                    <div className={`px-4 py-3 border-b ${darkMode ? 'border-white/10' : 'border-slate-200'}`}>
-                      <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-slate-800'}`}>{user.username}</p>
-                      <p className={`text-xs ${darkMode ? 'text-white/50' : 'text-slate-500'}`}>{user.email}</p>
-                    </div>
-                    <button
-                      onClick={handleLogout}
-                      className={`w-full px-4 py-3 flex items-center gap-2 text-left transition-colors ${darkMode ? 'text-red-400 hover:bg-white/10' : 'text-red-500 hover:bg-red-50'}`}
-                    >
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                        <polyline points="16 17 21 12 16 7"/>
-                        <line x1="21" y1="12" x2="9" y2="12"/>
-                      </svg>
-                      退出登录
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </div>
-      </header>
+      )}
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className={`p-4 rounded-xl transition-colors duration-300 ${darkMode ? 'bg-white/5' : 'bg-white shadow-sm'}`}>
-            <p className={`text-sm mb-1 ${darkMode ? 'text-white/50' : 'text-slate-500'}`}>总任务数</p>
-            <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>{stats.total}</p>
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-white mb-2">待办清单</h1>
+          <p className="text-slate-400">管理你的日常任务</p>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+          <div className={`backdrop-blur-lg rounded-2xl p-6 border transition-all duration-300 ${darkMode ? 'bg-purple-600/20 border-purple-500/20 hover:border-purple-500/40' : 'bg-white shadow-sm border-slate-200'}`}>
+            <div className="flex items-center justify-between mb-4">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${darkMode ? 'bg-purple-500/20' : 'bg-purple-100'}`}>
+                <span className="text-2xl">📋</span>
+              </div>
+            </div>
+            <p className={`text-3xl font-bold mb-1 ${darkMode ? 'text-white' : 'text-slate-800'}`}>{stats.total}</p>
+            <p className={`text-sm ${darkMode ? 'text-purple-300' : 'text-purple-600'}`}>总任务数</p>
           </div>
-          <div className={`p-4 rounded-xl transition-colors duration-300 ${darkMode ? 'bg-white/5' : 'bg-white shadow-sm'}`}>
-            <p className={`text-sm mb-1 ${darkMode ? 'text-white/50' : 'text-slate-500'}`}>待完成</p>
-            <p className={`text-2xl font-bold text-blue-400`}>{stats.active}</p>
+          <div className={`backdrop-blur-lg rounded-2xl p-6 border transition-all duration-300 ${darkMode ? 'bg-blue-600/20 border-blue-500/20 hover:border-blue-500/40' : 'bg-white shadow-sm border-slate-200'}`}>
+            <div className="flex items-center justify-between mb-4">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${darkMode ? 'bg-blue-500/20' : 'bg-blue-100'}`}>
+                <span className="text-2xl">⏳</span>
+              </div>
+            </div>
+            <p className="text-3xl font-bold mb-1 text-blue-400">{stats.active}</p>
+            <p className={`text-sm ${darkMode ? 'text-blue-300' : 'text-blue-600'}`}>待完成</p>
           </div>
-          <div className={`p-4 rounded-xl transition-colors duration-300 ${darkMode ? 'bg-white/5' : 'bg-white shadow-sm'}`}>
-            <p className={`text-sm mb-1 ${darkMode ? 'text-white/50' : 'text-slate-500'}`}>已完成</p>
-            <p className={`text-2xl font-bold text-green-400`}>{stats.completed}</p>
+          <div className={`backdrop-blur-lg rounded-2xl p-6 border transition-all duration-300 ${darkMode ? 'bg-green-600/20 border-green-500/20 hover:border-green-500/40' : 'bg-white shadow-sm border-slate-200'}`}>
+            <div className="flex items-center justify-between mb-4">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${darkMode ? 'bg-green-500/20' : 'bg-green-100'}`}>
+                <span className="text-2xl">✅</span>
+              </div>
+            </div>
+            <p className="text-3xl font-bold mb-1 text-green-400">{stats.completed}</p>
+            <p className={`text-sm ${darkMode ? 'text-green-300' : 'text-green-600'}`}>已完成</p>
           </div>
-          <div className={`p-4 rounded-xl transition-colors duration-300 ${darkMode ? 'bg-white/5' : 'bg-white shadow-sm'}`}>
-            <p className={`text-sm mb-1 ${darkMode ? 'text-white/50' : 'text-slate-500'}`}>完成率</p>
-            <p className={`text-2xl font-bold ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>{stats.completionRate}%</p>
+          <div className={`backdrop-blur-lg rounded-2xl p-6 border transition-all duration-300 ${darkMode ? 'bg-orange-600/20 border-orange-500/20 hover:border-orange-500/40' : 'bg-white shadow-sm border-slate-200'}`}>
+            <div className="flex items-center justify-between mb-4">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${darkMode ? 'bg-orange-500/20' : 'bg-orange-100'}`}>
+                <span className="text-2xl">📊</span>
+              </div>
+            </div>
+            <p className="text-3xl font-bold mb-1 text-orange-400">{stats.completionRate}%</p>
+            <p className={`text-sm ${darkMode ? 'text-orange-300' : 'text-orange-600'}`}>完成率</p>
           </div>
         </div>
 
         {stats.overdue > 0 && (
-          <div className={`mb-6 p-4 rounded-xl flex items-center justify-between transition-colors duration-300 ${darkMode ? 'bg-red-500/10 border border-red-500/20' : 'bg-red-50 border border-red-200'}`}>
-            <span className={`flex items-center gap-2 ${darkMode ? 'text-red-400' : 'text-red-600'}`}>
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <div className={`mb-8 p-5 rounded-2xl flex items-center justify-between transition-colors duration-300 border ${darkMode ? 'bg-red-500/10 border-red-500/20' : 'bg-red-50 border-red-200'}`}>
+            <span className={`flex items-center gap-3 ${darkMode ? 'text-red-400' : 'text-red-600'}`}>
+              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10"/>
                 <polyline points="12 6 12 12 16 14"/>
               </svg>
-              有 {stats.overdue} 个任务已逾期，请尽快处理！
+              <span className="font-medium">有 {stats.overdue} 个任务已逾期，请尽快处理！</span>
             </span>
           </div>
         )}
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {stats.byCategory.map(cat => (
-            <div key={cat.name} className={`p-3 rounded-lg transition-colors duration-300 ${darkMode ? 'bg-white/5' : 'bg-white shadow-sm'}`}>
-              <div className="flex items-center justify-between">
-                <span className={`text-sm ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>{cat.name}</span>
-                <span className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-slate-800'}`}>{cat.count}</span>
+            <div key={cat.name} className={`backdrop-blur-lg rounded-xl p-4 border transition-all duration-300 ${darkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200'}`}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full ${CATEGORY_COLORS[cat.name]}`}></div>
+                  <span className={`text-sm font-medium ${darkMode ? 'text-white/80' : 'text-slate-700'}`}>{cat.name}</span>
+                </div>
+                <span className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>{cat.count}</span>
               </div>
-              <div className={`mt-2 h-1.5 rounded-full overflow-hidden ${darkMode ? 'bg-white/10' : 'bg-slate-200'}`}>
+              <div className={`h-2 rounded-full overflow-hidden ${darkMode ? 'bg-white/10' : 'bg-slate-200'}`}>
                 <div 
-                  className={`h-full rounded-full transition-all duration-500 ${CATEGORY_COLORS[cat.name]}`}
+                  className={`h-full rounded-full transition-all duration-700 ${CATEGORY_COLORS[cat.name]}`}
                   style={{ width: stats.total > 0 ? `${(cat.count / stats.total) * 100}%` : '0%' }}
                 />
               </div>
@@ -396,10 +464,10 @@ export default function TodosPage() {
           ))}
         </div>
 
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-          <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-            <div className="relative flex-1 sm:w-auto">
-              <svg className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${darkMode ? 'text-white/30' : 'text-slate-400'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <div className={`backdrop-blur-lg rounded-2xl p-6 border mb-8 ${darkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200'}`}>
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <svg className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 ${darkMode ? 'text-white/30' : 'text-slate-400'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="11" cy="11" r="8"/>
                 <line x1="21" y1="21" x2="16.65" y2="16.65"/>
               </svg>
@@ -408,85 +476,99 @@ export default function TodosPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="搜索待办事项..."
-                className={`w-full sm:w-64 pl-10 pr-4 py-2 rounded-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-purple-500 ${darkMode ? 'bg-white/10 border border-white/20 text-white placeholder-white/30' : 'bg-white border border-slate-200 text-slate-800 placeholder-slate-400'}`}
+                className={`w-full pl-12 pr-4 py-3 rounded-xl ${darkMode ? 'bg-white/10 border border-white/20 text-white placeholder-white/30' : 'bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400'} focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all`}
               />
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className={`px-3 py-2 rounded-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-purple-500 ${darkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-white border border-slate-200 text-slate-800'}`}
-            >
-              <option value="all">全部分类</option>
-              {CATEGORIES.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as 'created' | 'due' | 'priority')}
-              className={`px-3 py-2 rounded-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-purple-500 ${darkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-white border border-slate-200 text-slate-800'}`}
-            >
-              <option value="created">按创建时间</option>
-              <option value="due">按截止日期</option>
-              <option value="priority">按优先级</option>
-            </select>
+            <div className="flex items-center gap-3">
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className={`px-4 py-3 rounded-xl ${darkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'} focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all`}
+              >
+                <option value="all">全部分类</option>
+                {CATEGORIES.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as 'created' | 'due' | 'priority')}
+                className={`px-4 py-3 rounded-xl ${darkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'} focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all`}
+              >
+                <option value="created">按创建时间</option>
+                <option value="due">按截止日期</option>
+                <option value="priority">按优先级</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 mb-6">
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-              filter === 'all' 
-                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' 
-                : darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            全部 ({todos.length})
-          </button>
-          <button
-            onClick={() => setFilter('active')}
-            className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-              filter === 'active' 
-                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' 
-                : darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            待完成 ({stats.active})
-          </button>
-          <button
-            onClick={() => setFilter('completed')}
-            className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-              filter === 'completed' 
-                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' 
-                : darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            已完成 ({stats.completed})
-          </button>
-          <div className="flex-1"></div>
-          <button
-            onClick={exportToCSV}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all ${darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
-          >
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            导出CSV
-          </button>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full font-semibold hover:shadow-lg hover:shadow-purple-500/30 transition-all"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 5v14M5 12h14"/>
-            </svg>
-            添加待办
-          </button>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setFilter('all')}
+              className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all ${
+                filter === 'all' 
+                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/25' 
+                  : darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              全部 ({todos.length})
+            </button>
+            <button
+              onClick={() => setFilter('active')}
+              className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all ${
+                filter === 'active' 
+                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/25' 
+                  : darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              待完成 ({stats.active})
+            </button>
+            <button
+              onClick={() => setFilter('completed')}
+              className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all ${
+                filter === 'completed' 
+                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/25' 
+                  : darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              已完成 ({stats.completed})
+            </button>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={exportToCSV}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              导出CSV
+            </button>
+            <button
+              onClick={() => setShowTemplateModal(true)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <path d="M3 9h18"/>
+                <path d="M9 21V9"/>
+              </svg>
+              使用模板
+            </button>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/30 transition-all"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 5v14M5 12h14"/>
+              </svg>
+              添加待办
+            </button>
+          </div>
         </div>
 
         {showBatchDelete && (
@@ -550,7 +632,7 @@ export default function TodosPage() {
                   </svg>
                 )}
               </button>
-              <span className={darkMode ? 'text-white/50' : 'text-slate-500'} className="text-sm">全选</span>
+              <span className={`${darkMode ? 'text-white/50' : 'text-slate-500'} text-sm`}>全选</span>
             </div>
             {filteredTodos.map(todo => (
               <div
@@ -562,7 +644,7 @@ export default function TodosPage() {
                 <div className="flex items-start gap-4">
                   <button
                     onClick={() => toggleSelect(todo.id)}
-                    className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                    className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all mt-2 ${
                       selectedIds.includes(todo.id)
                         ? 'bg-purple-500 border-purple-500'
                         : darkMode ? 'border-white/30 hover:border-white' : 'border-slate-300 hover:border-slate-500'
@@ -570,20 +652,6 @@ export default function TodosPage() {
                   >
                     {selectedIds.includes(todo.id) && (
                       <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                        <polyline points="20 6 9 17 4 12"/>
-                      </svg>
-                    )}
-                  </button>
-                  <button
-                    onClick={() => handleToggleComplete(todo.id)}
-                    className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                      todo.completed
-                        ? 'bg-green-500 border-green-500'
-                        : darkMode ? 'border-white/30 hover:border-white' : 'border-slate-300 hover:border-slate-500'
-                    }`}
-                  >
-                    {todo.completed && (
-                      <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                         <polyline points="20 6 9 17 4 12"/>
                       </svg>
                     )}
@@ -631,26 +699,54 @@ export default function TodosPage() {
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col sm:flex-row items-center gap-2">
                     <button
-                      onClick={() => { setEditingTodo(todo); setShowEditModal(true); }}
-                      className={`p-2 rounded-lg transition-all ${darkMode ? 'text-white/50 hover:text-white hover:bg-white/10' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+                      onClick={() => handleToggleComplete(todo.id)}
+                      className={`flex items-center gap-2 px-5 py-2.5 rounded-xl flex-shrink-0 transition-all duration-300 ${
+                        todo.completed
+                          ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                          : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:shadow-lg hover:shadow-green-500/30 hover:-translate-y-0.5'
+                      }`}
                     >
-                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
-                        <path d="m15 5 4 4"/>
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="20 6 9 17 4 12"/>
                       </svg>
+                      <span className="text-sm font-semibold">{todo.completed ? '已完成' : '提前完成'}</span>
                     </button>
-                    <button
-                      onClick={() => handleDeleteTodo(todo.id)}
-                      className={`p-2 rounded-lg transition-all ${darkMode ? 'text-white/50 hover:text-red-400 hover:bg-red-500/10' : 'text-slate-500 hover:text-red-500 hover:bg-red-50'}`}
-                    >
-                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M3 6h18"/>
-                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
-                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
-                      </svg>
-                    </button>
+                    <div className="flex items-center gap-1 border-l border-white/10 pl-2">
+                      <button
+                        onClick={() => handleShareTodo(todo.id)}
+                        className={`p-2 rounded-lg transition-all ${darkMode ? 'text-white/50 hover:text-blue-400 hover:bg-blue-500/10' : 'text-slate-500 hover:text-blue-500 hover:bg-blue-50'}`}
+                        title="分享此任务"
+                      >
+                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="18" cy="5" r="3"/>
+                          <circle cx="6" cy="12" r="3"/>
+                          <circle cx="18" cy="19" r="3"/>
+                          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => { setEditingTodo(todo); setShowEditModal(true); }}
+                        className={`p-2 rounded-lg transition-all ${darkMode ? 'text-white/50 hover:text-white hover:bg-white/10' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+                      >
+                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                          <path d="m15 5 4 4"/>
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteTodo(todo.id)}
+                        className={`p-2 rounded-lg transition-all ${darkMode ? 'text-white/50 hover:text-red-400 hover:bg-red-500/10' : 'text-slate-500 hover:text-red-500 hover:bg-red-50'}`}
+                      >
+                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M3 6h18"/>
+                          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -900,6 +996,73 @@ export default function TodosPage() {
                 保存
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showTemplateModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+          <div className={`rounded-2xl w-full max-w-md p-6 animate-scale-in transition-colors duration-300 ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
+            <h2 className={`text-2xl font-bold mb-4 transition-colors duration-300 ${darkMode ? 'text-white' : 'text-slate-800'}`}>选择模板</h2>
+            <div className="space-y-3">
+              {Object.entries(templates).map(([key, template]) => (
+                <button
+                  key={key}
+                  onClick={() => applyTemplate(key)}
+                  className={`w-full p-4 rounded-xl text-left transition-all ${darkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-slate-50 hover:bg-slate-100'}`}
+                >
+                  <h3 className={`font-semibold mb-2 ${darkMode ? 'text-white' : 'text-slate-800'}`}>{template.name}</h3>
+                  <div className="flex flex-wrap gap-1">
+                    {template.items.slice(0, 3).map((item, index) => (
+                      <span key={index} className={`px-2 py-0.5 rounded-full text-xs ${darkMode ? 'bg-white/10 text-white/70' : 'bg-slate-200 text-slate-600'}`}>
+                        {item}
+                      </span>
+                    ))}
+                    {template.items.length > 3 && (
+                      <span className={`px-2 py-0.5 rounded-full text-xs ${darkMode ? 'bg-white/10 text-white/70' : 'bg-slate-200 text-slate-600'}`}>
+                        +{template.items.length - 3}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={() => setShowTemplateModal(false)}
+                className={`px-6 py-2 rounded-lg font-semibold transition-all ${darkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+              >
+                取消
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showShareSuccess && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+          <div className={`rounded-2xl w-full max-w-md p-6 animate-scale-in text-center transition-colors duration-300 ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
+            <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-green-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+            <h2 className={`text-2xl font-bold mb-2 transition-colors duration-300 ${darkMode ? 'text-white' : 'text-slate-800'}`}>分享链接已复制</h2>
+            <p className={`text-sm mb-4 ${darkMode ? 'text-white/60' : 'text-slate-500'}`}>链接已自动复制到剪贴板，24小时内有效</p>
+            <div className={`p-3 rounded-lg text-left mb-6 ${darkMode ? 'bg-white/5' : 'bg-slate-50'}`}>
+              <input
+                type="text"
+                value={shareUrl}
+                readOnly
+                className={`w-full bg-transparent ${darkMode ? 'text-white/80' : 'text-slate-600'} text-sm`}
+              />
+            </div>
+            <button
+              onClick={() => { setShowShareSuccess(false); setShareUrl(''); }}
+              className="px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:shadow-lg transition-all"
+            >
+              确定
+            </button>
           </div>
         </div>
       )}

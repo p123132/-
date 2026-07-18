@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import Navbar from '../components/Navbar';
 
 interface DiceResult {
   value: number;
@@ -39,13 +40,25 @@ export default function DecisionPage() {
     setShowQuote(false);
     setDiceResult(null);
     
-    const randomX = Math.floor(Math.random() * 4) * 360 + (Math.random() > 0.5 ? 90 : 270);
-    const randomY = Math.floor(Math.random() * 4) * 360 + (Math.random() > 0.5 ? 90 : 270);
+    const result = Math.floor(Math.random() * 6) + 1;
     
-    setDiceTransform(`rotateX(${randomX}deg) rotateY(${randomY}deg)`);
+    const rotations: Record<number, { x: number; y: number }> = {
+      1: { x: 0, y: 0 },
+      2: { x: 180, y: 0 },
+      3: { x: 0, y: -90 },
+      4: { x: 0, y: 90 },
+      5: { x: -90, y: 0 },
+      6: { x: 90, y: 0 },
+    };
+    
+    const baseRotation = rotations[result];
+    const extraSpins = Math.floor(Math.random() * 3) + 2;
+    const finalX = baseRotation.x + extraSpins * 360;
+    const finalY = baseRotation.y + extraSpins * 360;
+    
+    setDiceTransform(`rotateX(${finalX}deg) rotateY(${finalY}deg)`);
     
     setTimeout(() => {
-      const result = Math.floor(Math.random() * 6) + 1;
       setDiceResult({ value: result, isEven: result % 2 === 0 });
       setShowResult(true);
       setTimeout(() => {
@@ -82,7 +95,7 @@ export default function DecisionPage() {
   };
 
   const handleGoToTodos = () => {
-    router.push('/todos');
+    router.push('/todos?add=true');
   };
 
   const handleRetry = () => {
@@ -109,9 +122,10 @@ export default function DecisionPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col items-center justify-center relative overflow-hidden">
+      <Navbar />
       <div className="absolute inset-0 bg-gradient-radial"></div>
       
-      <div className="relative z-10 w-full max-w-2xl px-6">
+      <div className="relative z-10 w-full max-w-2xl px-6 pt-20">
         <div className="text-center mb-10">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
             <span className="text-gradient">命运抉择</span>
