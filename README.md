@@ -373,8 +373,8 @@ MIT License
 ## 🚀 线上部署
 
 ### 前端部署（Vercel）
-- **URL**: `https://your-vercel-domain.vercel.app`
 - **部署平台**: Vercel
+- **部署命令**: `npx vercel --prod`
 
 ### 后端部署（PythonAnywhere）
 - **URL**: `https://your-pythonanywhere-domain.pythonanywhere.com`

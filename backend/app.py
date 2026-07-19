@@ -722,6 +722,25 @@ def admin_health():
         'logs': log_count
     })
 
+@app.route('/api/admin/database', methods=['GET'])
+def admin_database():
+    conn = get_db()
+    
+    users = conn.execute('SELECT id, username, email, avatar, role, created_at FROM users ORDER BY id LIMIT 20').fetchall()
+    todos = conn.execute('SELECT id, user_id, title, description, completed, priority, category, due_date, created_at FROM todos ORDER BY id LIMIT 20').fetchall()
+    logs = conn.execute('SELECT audit_logs.id, audit_logs.user_id, users.username, audit_logs.action, audit_logs.resource, audit_logs.details, audit_logs.created_at FROM audit_logs LEFT JOIN users ON audit_logs.user_id = users.id ORDER BY audit_logs.id DESC LIMIT 20').fetchall()
+    
+    conn.close()
+    
+    return jsonify({
+        'users': [dict(u) for u in users],
+        'todos': [dict(t) for t in todos],
+        'logs': [dict(l) for l in logs],
+        'user_count': len(users),
+        'todo_count': len(todos),
+        'log_count': len(logs)
+    })
+
 from flask import send_from_directory
 
 @app.route('/')
