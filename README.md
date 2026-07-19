@@ -110,8 +110,14 @@ pbypp/
 │   └── tsconfig.json           # TypeScript配置
 ├── docs/                       # 项目文档
 │   ├── API.md                  # API接口文档
+│   ├── ai_code_review.md       # AI代码审查报告
 │   ├── prompt_log.md           # AI使用Prompt日志
 │   ├── screenshots.md          # 截图说明文档
+│   ├── screenshots/            # 截图包目录
+│   │   ├── README.md           # 截图包说明
+│   │   ├── database/           # 数据库截图
+│   │   ├── api/                # API接口测试截图
+│   │   └── ai_code_review/     # AI代码审查截图
 │   └── 总结报告.md             # 个人总结报告
 ├── .gitignore                  # Git忽略文件
 ├── README.md                   # 项目说明文档
@@ -363,6 +369,42 @@ npm run dev
 ## 📄 许可证
 
 MIT License
+
+## 🚀 线上部署
+
+### 前端部署（Vercel）
+- **URL**: `https://your-vercel-domain.vercel.app`
+- **部署平台**: Vercel
+
+### 后端部署（PythonAnywhere）
+- **URL**: `https://your-pythonanywhere-domain.pythonanywhere.com`
+- **部署平台**: PythonAnywhere
+
+## 📷 截图包
+
+截图包位于 `docs/screenshots/` 目录，包含：
+- **数据库截图**: 数据库表结构和数据
+- **API接口测试截图**: 所有API接口的测试结果
+- **AI Code Review截图**: AI代码审查报告
+
+详细说明请查看 [docs/screenshots/README.md](docs/screenshots/README.md)
+
+## 🎬 项目演示录屏
+
+项目演示视频展示了以下功能：
+1. 用户注册和登录
+2. 摇骰子决策系统
+3. 待办事项管理（添加、编辑、删除、完成）
+4. 数据统计分析
+5. 个人中心（资料修改、密码修改）
+6. 管理后台（用户管理、数据概览）
+7. 任务模板和分享功能
+
+演示视频文件：`docs/demo.mp4`
+
+## 📄 AI Code Review 报告
+
+详细的AI代码审查报告请查看 [docs/ai_code_review.md](docs/ai_code_review.md)
 
 ## 📧 联系方式
 

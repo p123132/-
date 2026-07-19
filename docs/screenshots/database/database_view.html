@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据库结构展示 - Todo Adventure</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            font-size: 32px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 16px;
+            font-size: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 8px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        th {
+            background: #f5f5f5;
+            color: #333;
+            font-weight: 600;
+        }
+        tr:hover {
+            background: #f9f9f9;
+        }
+        .count {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            margin-left: 12px;
+        }
+        .table-info {
+            margin-top: 8px;
+            color: #666;
+            font-size: 14px;
+        }
+        .pk {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .fk {
+            color: #3498db;
+            font-weight: bold;
+        }
+        .footer {
+            text-align: center;
+            color: rgba(255,255,255,0.8);
+            margin-top: 30px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Todo Adventure 数据库结构</h1>
+        
+        <div class="card">
+            <h2>users 表 - 用户信息表 <span class="count">4 条记录</span></h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>字段名</th>
+                        <th>类型</th>
+                        <th>主键</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>id</td><td>INTEGER</td><td class="pk">✓</td><td>用户ID，自增主键</td></tr>
+                    <tr><td>username</td><td>TEXT</td><td>-</td><td>用户名</td></tr>
+                    <tr><td>email</td><td>TEXT</td><td>-</td><td>邮箱地址</td></tr>
+                    <tr><td>password</td><td>TEXT</td><td>-</td><td>密码（bcrypt加密）</td></tr>
+                    <tr><td>avatar</td><td>TEXT</td><td>-</td><td>头像URL</td></tr>
+                    <tr><td>role</td><td>TEXT</td><td>-</td><td>角色（admin/user）</td></tr>
+                    <tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>创建时间</td></tr>
+                </tbody>
+            </table>
+            <div class="table-info">
+                <strong>数据示例：</strong>
+                admin (admin@example.com) - 管理员, testdemo, 11223, 112230 - 普通用户
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>todos 表 - 待办事项表 <span class="count">6 条记录</span></h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>字段名</th>
+                        <th>类型</th>
+                        <th>主键</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>id</td><td>INTEGER</td><td class="pk">✓</td><td>待办ID，自增主键</td></tr>
+                    <tr><td>user_id</td><td>INTEGER</td><td class="fk">FK</td><td>关联用户ID</td></tr>
+                    <tr><td>title</td><td>TEXT</td><td>-</td><td>待办标题</td></tr>
+                    <tr><td>description</td><td>TEXT</td><td>-</td><td>待办描述</td></tr>
+                    <tr><td>completed</td><td>BOOLEAN</td><td>-</td><td>是否完成</td></tr>
+                    <tr><td>priority</td><td>INTEGER</td><td>-</td><td>优先级（1-3）</td></tr>
+                    <tr><td>category</td><td>TEXT</td><td>-</td><td>分类（工作/学习/生活/其他）</td></tr>
+                    <tr><td>due_date</td><td>DATE</td><td>-</td><td>截止日期</td></tr>
+                    <tr><td>planned_date</td><td>DATE</td><td>-</td><td>计划日期</td></tr>
+                    <tr><td>photo</td><td>TEXT</td><td>-</td><td>照片URL</td></tr>
+                    <tr><td>share_token</td><td>TEXT</td><td>-</td><td>分享Token</td></tr>
+                    <tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>创建时间</td></tr>
+                </tbody>
+            </table>
+            <div class="table-info">
+                <strong>数据示例：</strong>
+                文科生高等教育（已完成）、早起、运动、阅读、喝水等待办事项
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>audit_logs 表 - 操作日志表 <span class="count">90 条记录</span></h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>字段名</th>
+                        <th>类型</th>
+                        <th>主键</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>id</td><td>INTEGER</td><td class="pk">✓</td><td>日志ID，自增主键</td></tr>
+                    <tr><td>user_id</td><td>INTEGER</td><td class="fk">FK</td><td>操作用户ID</td></tr>
+                    <tr><td>action</td><td>TEXT</td><td>-</td><td>操作类型</td></tr>
+                    <tr><td>resource</td><td>TEXT</td><td>-</td><td>操作资源</td></tr>
+                    <tr><td>resource_id</td><td>INTEGER</td><td>-</td><td>资源ID</td></tr>
+                    <tr><td>details</td><td>TEXT</td><td>-</td><td>操作详情</td></tr>
+                    <tr><td>ip_address</td><td>TEXT</td><td>-</td><td>IP地址</td></tr>
+                    <tr><td>created_at</td><td>TIMESTAMP</td><td>-</td><td>操作时间</td></tr>
+                </tbody>
+            </table>
+            <div class="table-info">
+                <strong>记录的操作类型：</strong>
+                user_register（用户注册）、user_login（用户登录）、todo_create（创建待办）、todo_update（更新待办）、todo_delete（删除待办）、todo_share（分享待办）等
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>数据库关系图</h2>
+            <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; font-family: monospace; font-size: 14px; line-height: 1.8;">
+                <pre>
+users  ──────────────── todos
+  │                        │
+  │ 1:N                    │ N:1
+  │                        │
+  ├─ id ──────→ user_id   │
+  │                        │
+audit_logs                │
+  │                        │
+  │ 1:N                    │
+  ├─ user_id ←─── id      │
+  │                        │
+  └─ resource_id ←─── id ─┘
+                </pre>
+                <p style="color: #666; margin-top: 10px;">
+                    <strong>说明：</strong>
+                    <br>• users.id → todos.user_id：一个用户可以有多个待办事项
+                    <br>• users.id → audit_logs.user_id：一个用户可以有多个操作日志
+                    <br>• todos.id → audit_logs.resource_id：一个待办事项可以有多个相关日志
+                </p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Todo Adventure 项目数据库 | SQLite | 2026年7月</p>
+        </div>
+    </div>
+</body>
+</html>

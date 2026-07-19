@@ -7,7 +7,10 @@ import jwt
 import datetime
 import uuid
 
-static_dir = os.environ.get('STATIC_DIR', os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frontend', 'out'))
+default_static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'frontend_dist')
+if not os.path.exists(default_static_dir):
+    default_static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frontend', 'out')
+static_dir = os.environ.get('STATIC_DIR', default_static_dir)
 app = Flask(__name__, static_folder=static_dir, static_url_path='')
 CORS(app, origins=['http://localhost:3000', 'http://localhost:5000', 'https://todo-adventure.vercel.app', '*'])
 
@@ -719,18 +722,48 @@ def admin_health():
         'logs': log_count
     })
 
+from flask import send_from_directory
+
 @app.route('/')
 def serve_index():
-    return app.send_static_file('index.html')
+    return send_from_directory(static_dir, 'index.html')
+
+@app.route('/register')
+def serve_register():
+    return send_from_directory(static_dir, 'register.html')
+
+@app.route('/login')
+def serve_login():
+    return send_from_directory(static_dir, 'login.html')
+
+@app.route('/todos')
+def serve_todos():
+    return send_from_directory(static_dir, 'todos.html')
+
+@app.route('/admin')
+def serve_admin():
+    return send_from_directory(static_dir, 'admin.html')
+
+@app.route('/profile')
+def serve_profile():
+    return send_from_directory(static_dir, 'profile.html')
+
+@app.route('/stats')
+def serve_stats():
+    return send_from_directory(static_dir, 'stats.html')
+
+@app.route('/decision')
+def serve_decision():
+    return send_from_directory(static_dir, 'decision.html')
 
 @app.route('/<path:path>')
 def serve_static_file(path):
     if path.startswith('api/'):
         return jsonify({'error': 'Not found'}), 404
     try:
-        return app.send_static_file(path)
+        return send_from_directory(static_dir, path)
     except:
-        return app.send_static_file('index.html')
+        return send_from_directory(static_dir, 'index.html')
 
 if __name__ == '__main__':
     init_db()

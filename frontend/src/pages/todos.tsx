@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/router';
 import Navbar from '../components/Navbar';
+import { useTheme } from '../context/ThemeContext';
 
 interface Todo {
   id: number;
@@ -51,7 +52,6 @@ export default function TodosPage() {
   const [sortBy, setSortBy] = useState<'created' | 'due' | 'priority'>('created');
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [showBatchDelete, setShowBatchDelete] = useState(false);
-  const [darkMode, setDarkMode] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [templates, setTemplates] = useState<Record<string, Template>>({});
@@ -59,6 +59,7 @@ export default function TodosPage() {
   const [shareUrl, setShareUrl] = useState('');
   const [showShareSuccess, setShowShareSuccess] = useState(false);
   const [showNotificationPermission, setShowNotificationPermission] = useState(false);
+  const { isDarkMode } = useTheme();
   const router = useRouter();
 
   const API_BASE = '/api';
@@ -92,10 +93,6 @@ export default function TodosPage() {
   useEffect(() => {
     setShowBatchDelete(selectedIds.length > 0);
   }, [selectedIds]);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', darkMode);
-  }, [darkMode]);
 
   const fetchTodos = async () => {
     setLoading(true);
@@ -355,11 +352,11 @@ export default function TodosPage() {
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900' : 'bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50'}`}>
+    <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900' : 'bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50'}`}>
       <Navbar />
       
       {showNotificationPermission && (
-        <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-4 rounded-xl flex items-center gap-4 transition-colors duration-300 ${darkMode ? 'bg-slate-800 border border-white/10' : 'bg-white shadow-lg'}`}>
+        <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-4 rounded-xl flex items-center gap-4 transition-colors duration-300 ${isDarkMode ? 'bg-slate-800 border border-white/10' : 'bg-white shadow-lg'}`}>
           <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
             <svg className="w-5 h-5 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
@@ -367,13 +364,13 @@ export default function TodosPage() {
             </svg>
           </div>
           <div>
-            <p className={`font-semibold ${darkMode ? 'text-white' : 'text-slate-800'}`}>启用浏览器通知</p>
-            <p className={`text-sm ${darkMode ? 'text-white/60' : 'text-slate-500'}`}>接收待办任务到期提醒</p>
+            <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>启用浏览器通知</p>
+            <p className={`text-sm ${isDarkMode ? 'text-white/60' : 'text-slate-500'}`}>接收待办任务到期提醒</p>
           </div>
           <div className="flex gap-2">
             <button
               onClick={() => setShowNotificationPermission(false)}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${isDarkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
             >
               稍后
             </button>
@@ -394,47 +391,47 @@ export default function TodosPage() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-          <div className={`backdrop-blur-lg rounded-2xl p-6 border transition-all duration-300 ${darkMode ? 'bg-purple-600/20 border-purple-500/20 hover:border-purple-500/40' : 'bg-white shadow-sm border-slate-200'}`}>
+          <div className={`backdrop-blur-lg rounded-2xl p-6 border transition-all duration-300 ${isDarkMode ? 'bg-purple-600/20 border-purple-500/20 hover:border-purple-500/40' : 'bg-white shadow-sm border-slate-200'}`}>
             <div className="flex items-center justify-between mb-4">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${darkMode ? 'bg-purple-500/20' : 'bg-purple-100'}`}>
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isDarkMode ? 'bg-purple-500/20' : 'bg-purple-100'}`}>
                 <span className="text-2xl">📋</span>
               </div>
             </div>
-            <p className={`text-3xl font-bold mb-1 ${darkMode ? 'text-white' : 'text-slate-800'}`}>{stats.total}</p>
-            <p className={`text-sm ${darkMode ? 'text-purple-300' : 'text-purple-600'}`}>总任务数</p>
+            <p className={`text-3xl font-bold mb-1 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{stats.total}</p>
+            <p className={`text-sm ${isDarkMode ? 'text-purple-300' : 'text-purple-600'}`}>总任务数</p>
           </div>
-          <div className={`backdrop-blur-lg rounded-2xl p-6 border transition-all duration-300 ${darkMode ? 'bg-blue-600/20 border-blue-500/20 hover:border-blue-500/40' : 'bg-white shadow-sm border-slate-200'}`}>
+          <div className={`backdrop-blur-lg rounded-2xl p-6 border transition-all duration-300 ${isDarkMode ? 'bg-blue-600/20 border-blue-500/20 hover:border-blue-500/40' : 'bg-white shadow-sm border-slate-200'}`}>
             <div className="flex items-center justify-between mb-4">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${darkMode ? 'bg-blue-500/20' : 'bg-blue-100'}`}>
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isDarkMode ? 'bg-blue-500/20' : 'bg-blue-100'}`}>
                 <span className="text-2xl">⏳</span>
               </div>
             </div>
             <p className="text-3xl font-bold mb-1 text-blue-400">{stats.active}</p>
-            <p className={`text-sm ${darkMode ? 'text-blue-300' : 'text-blue-600'}`}>待完成</p>
+            <p className={`text-sm ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}>待完成</p>
           </div>
-          <div className={`backdrop-blur-lg rounded-2xl p-6 border transition-all duration-300 ${darkMode ? 'bg-green-600/20 border-green-500/20 hover:border-green-500/40' : 'bg-white shadow-sm border-slate-200'}`}>
+          <div className={`backdrop-blur-lg rounded-2xl p-6 border transition-all duration-300 ${isDarkMode ? 'bg-green-600/20 border-green-500/20 hover:border-green-500/40' : 'bg-white shadow-sm border-slate-200'}`}>
             <div className="flex items-center justify-between mb-4">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${darkMode ? 'bg-green-500/20' : 'bg-green-100'}`}>
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isDarkMode ? 'bg-green-500/20' : 'bg-green-100'}`}>
                 <span className="text-2xl">✅</span>
               </div>
             </div>
             <p className="text-3xl font-bold mb-1 text-green-400">{stats.completed}</p>
-            <p className={`text-sm ${darkMode ? 'text-green-300' : 'text-green-600'}`}>已完成</p>
+            <p className={`text-sm ${isDarkMode ? 'text-green-300' : 'text-green-600'}`}>已完成</p>
           </div>
-          <div className={`backdrop-blur-lg rounded-2xl p-6 border transition-all duration-300 ${darkMode ? 'bg-orange-600/20 border-orange-500/20 hover:border-orange-500/40' : 'bg-white shadow-sm border-slate-200'}`}>
+          <div className={`backdrop-blur-lg rounded-2xl p-6 border transition-all duration-300 ${isDarkMode ? 'bg-orange-600/20 border-orange-500/20 hover:border-orange-500/40' : 'bg-white shadow-sm border-slate-200'}`}>
             <div className="flex items-center justify-between mb-4">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${darkMode ? 'bg-orange-500/20' : 'bg-orange-100'}`}>
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isDarkMode ? 'bg-orange-500/20' : 'bg-orange-100'}`}>
                 <span className="text-2xl">📊</span>
               </div>
             </div>
             <p className="text-3xl font-bold mb-1 text-orange-400">{stats.completionRate}%</p>
-            <p className={`text-sm ${darkMode ? 'text-orange-300' : 'text-orange-600'}`}>完成率</p>
+            <p className={`text-sm ${isDarkMode ? 'text-orange-300' : 'text-orange-600'}`}>完成率</p>
           </div>
         </div>
 
         {stats.overdue > 0 && (
-          <div className={`mb-8 p-5 rounded-2xl flex items-center justify-between transition-colors duration-300 border ${darkMode ? 'bg-red-500/10 border-red-500/20' : 'bg-red-50 border-red-200'}`}>
-            <span className={`flex items-center gap-3 ${darkMode ? 'text-red-400' : 'text-red-600'}`}>
+          <div className={`mb-8 p-5 rounded-2xl flex items-center justify-between transition-colors duration-300 border ${isDarkMode ? 'bg-red-500/10 border-red-500/20' : 'bg-red-50 border-red-200'}`}>
+            <span className={`flex items-center gap-3 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>
               <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10"/>
                 <polyline points="12 6 12 12 16 14"/>
@@ -446,15 +443,15 @@ export default function TodosPage() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {stats.byCategory.map(cat => (
-            <div key={cat.name} className={`backdrop-blur-lg rounded-xl p-4 border transition-all duration-300 ${darkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200'}`}>
+            <div key={cat.name} className={`backdrop-blur-lg rounded-xl p-4 border transition-all duration-300 ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200'}`}>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <div className={`w-3 h-3 rounded-full ${CATEGORY_COLORS[cat.name]}`}></div>
-                  <span className={`text-sm font-medium ${darkMode ? 'text-white/80' : 'text-slate-700'}`}>{cat.name}</span>
+                  <span className={`text-sm font-medium ${isDarkMode ? 'text-white/80' : 'text-slate-700'}`}>{cat.name}</span>
                 </div>
-                <span className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>{cat.count}</span>
+                <span className={`text-sm font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{cat.count}</span>
               </div>
-              <div className={`h-2 rounded-full overflow-hidden ${darkMode ? 'bg-white/10' : 'bg-slate-200'}`}>
+              <div className={`h-2 rounded-full overflow-hidden ${isDarkMode ? 'bg-white/10' : 'bg-slate-200'}`}>
                 <div 
                   className={`h-full rounded-full transition-all duration-700 ${CATEGORY_COLORS[cat.name]}`}
                   style={{ width: stats.total > 0 ? `${(cat.count / stats.total) * 100}%` : '0%' }}
@@ -464,10 +461,10 @@ export default function TodosPage() {
           ))}
         </div>
 
-        <div className={`backdrop-blur-lg rounded-2xl p-6 border mb-8 ${darkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200'}`}>
+        <div className={`backdrop-blur-lg rounded-2xl p-6 border mb-8 ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200'}`}>
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
-              <svg className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 ${darkMode ? 'text-white/30' : 'text-slate-400'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 ${isDarkMode ? 'text-white/30' : 'text-slate-400'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="11" cy="11" r="8"/>
                 <line x1="21" y1="21" x2="16.65" y2="16.65"/>
               </svg>
@@ -476,14 +473,14 @@ export default function TodosPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="搜索待办事项..."
-                className={`w-full pl-12 pr-4 py-3 rounded-xl ${darkMode ? 'bg-white/10 border border-white/20 text-white placeholder-white/30' : 'bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400'} focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all`}
+                className={`w-full pl-12 pr-4 py-3 rounded-xl ${isDarkMode ? 'bg-white/10 border border-white/20 text-white placeholder-white/30' : 'bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400'} focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all`}
               />
             </div>
             <div className="flex items-center gap-3">
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className={`px-4 py-3 rounded-xl ${darkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'} focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all`}
+                className={`px-4 py-3 rounded-xl ${isDarkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'} focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all`}
               >
                 <option value="all">全部分类</option>
                 {CATEGORIES.map(cat => (
@@ -493,7 +490,7 @@ export default function TodosPage() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as 'created' | 'due' | 'priority')}
-                className={`px-4 py-3 rounded-xl ${darkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'} focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all`}
+                className={`px-4 py-3 rounded-xl ${isDarkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'} focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all`}
               >
                 <option value="created">按创建时间</option>
                 <option value="due">按截止日期</option>
@@ -510,7 +507,7 @@ export default function TodosPage() {
               className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all ${
                 filter === 'all' 
                   ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/25' 
-                  : darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  : isDarkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               全部 ({todos.length})
@@ -520,7 +517,7 @@ export default function TodosPage() {
               className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all ${
                 filter === 'active' 
                   ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/25' 
-                  : darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  : isDarkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               待完成 ({stats.active})
@@ -530,7 +527,7 @@ export default function TodosPage() {
               className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all ${
                 filter === 'completed' 
                   ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/25' 
-                  : darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  : isDarkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               已完成 ({stats.completed})
@@ -539,7 +536,7 @@ export default function TodosPage() {
           <div className="flex items-center gap-3">
             <button
               onClick={exportToCSV}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${isDarkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -550,7 +547,7 @@ export default function TodosPage() {
             </button>
             <button
               onClick={() => setShowTemplateModal(true)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${isDarkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
@@ -572,12 +569,12 @@ export default function TodosPage() {
         </div>
 
         {showBatchDelete && (
-          <div className={`mb-4 p-4 rounded-xl flex items-center justify-between transition-colors duration-300 ${darkMode ? 'bg-white/10' : 'bg-white shadow-sm'}`}>
-            <span className={darkMode ? 'text-white' : 'text-slate-800'}>已选中 {selectedIds.length} 项</span>
+          <div className={`mb-4 p-4 rounded-xl flex items-center justify-between transition-colors duration-300 ${isDarkMode ? 'bg-white/10' : 'bg-white shadow-sm'}`}>
+            <span className={isDarkMode ? 'text-white' : 'text-slate-800'}>已选中 {selectedIds.length} 项</span>
             <div className="flex gap-3">
               <button
                 onClick={() => setSelectedIds([])}
-                className={`px-4 py-2 rounded-lg font-semibold transition-all ${darkMode ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                className={`px-4 py-2 rounded-lg font-semibold transition-all ${isDarkMode ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
               >
                 取消选择
               </button>
@@ -598,16 +595,16 @@ export default function TodosPage() {
 
         {loading ? (
           <div className="flex justify-center items-center py-12">
-            <div className={`w-8 h-8 border-4 rounded-full animate-spin ${darkMode ? 'border-white/20 border-t-white' : 'border-slate-200 border-t-purple-500'}`}></div>
+            <div className={`w-8 h-8 border-4 rounded-full animate-spin ${isDarkMode ? 'border-white/20 border-t-white' : 'border-slate-200 border-t-purple-500'}`}></div>
           </div>
         ) : filteredTodos.length === 0 ? (
           <div className="text-center py-16">
-            <svg className={`w-16 h-16 mx-auto mb-4 transition-colors duration-300 ${darkMode ? 'text-white/30' : 'text-slate-300'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg className={`w-16 h-16 mx-auto mb-4 transition-colors duration-300 ${isDarkMode ? 'text-white/30' : 'text-slate-300'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <circle cx="12" cy="12" r="10"/>
               <path d="M8 12h8"/>
               <path d="M12 8v8"/>
             </svg>
-            <p className={`text-lg transition-colors duration-300 ${darkMode ? 'text-white/50' : 'text-slate-500'}`}>暂无待办事项</p>
+            <p className={`text-lg transition-colors duration-300 ${isDarkMode ? 'text-white/50' : 'text-slate-500'}`}>暂无待办事项</p>
             <button
               onClick={() => setShowAddModal(true)}
               className="mt-4 text-purple-400 hover:text-purple-300 font-semibold"
@@ -623,7 +620,7 @@ export default function TodosPage() {
                 className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
                   selectedIds.length === filteredTodos.length && filteredTodos.length > 0
                     ? 'bg-purple-500 border-purple-500'
-                    : darkMode ? 'border-white/30 hover:border-white' : 'border-slate-300 hover:border-slate-500'
+                    : isDarkMode ? 'border-white/30 hover:border-white' : 'border-slate-300 hover:border-slate-500'
                 }`}
               >
                 {selectedIds.length === filteredTodos.length && filteredTodos.length > 0 && (
@@ -632,14 +629,14 @@ export default function TodosPage() {
                   </svg>
                 )}
               </button>
-              <span className={`${darkMode ? 'text-white/50' : 'text-slate-500'} text-sm`}>全选</span>
+              <span className={`${isDarkMode ? 'text-white/50' : 'text-slate-500'} text-sm`}>全选</span>
             </div>
             {filteredTodos.map(todo => (
               <div
                 key={todo.id}
                 className={`rounded-xl p-4 transition-all hover:shadow-md ${
                   todo.completed ? 'opacity-60' : ''
-                } ${selectedIds.includes(todo.id) ? 'ring-2 ring-purple-500' : ''} ${darkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-white hover:bg-slate-50'}`}
+                } ${selectedIds.includes(todo.id) ? 'ring-2 ring-purple-500' : ''} ${isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-white hover:bg-slate-50'}`}
               >
                 <div className="flex items-start gap-4">
                   <button
@@ -647,7 +644,7 @@ export default function TodosPage() {
                     className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all mt-2 ${
                       selectedIds.includes(todo.id)
                         ? 'bg-purple-500 border-purple-500'
-                        : darkMode ? 'border-white/30 hover:border-white' : 'border-slate-300 hover:border-slate-500'
+                        : isDarkMode ? 'border-white/30 hover:border-white' : 'border-slate-300 hover:border-slate-500'
                     }`}
                   >
                     {selectedIds.includes(todo.id) && (
@@ -658,7 +655,7 @@ export default function TodosPage() {
                   </button>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className={`font-semibold text-lg ${todo.completed ? (darkMode ? 'line-through text-white/50' : 'line-through text-slate-400') : (darkMode ? 'text-white' : 'text-slate-800')}`}>
+                      <h3 className={`font-semibold text-lg ${todo.completed ? (isDarkMode ? 'line-through text-white/50' : 'line-through text-slate-400') : (isDarkMode ? 'text-white' : 'text-slate-800')}`}>
                         {todo.title}
                       </h3>
                       {isOverdue(todo.due_date) && !todo.completed && (
@@ -669,7 +666,7 @@ export default function TodosPage() {
                       </span>
                     </div>
                     {todo.description && (
-                      <p className={darkMode ? 'text-white/60 mt-1 line-clamp-2' : 'text-slate-600 mt-1 line-clamp-2'}>{todo.description}</p>
+                      <p className={isDarkMode ? 'text-white/60 mt-1 line-clamp-2' : 'text-slate-600 mt-1 line-clamp-2'}>{todo.description}</p>
                     )}
                     {todo.photo && (
                       <div className="mt-2">
@@ -685,16 +682,16 @@ export default function TodosPage() {
                         {getPriorityText(todo.priority)}优先级
                       </span>
                       {todo.due_date && (
-                        <span className={`text-xs px-2 py-1 rounded-full ${isOverdue(todo.due_date) && !todo.completed ? 'bg-red-500/20 text-red-400' : (darkMode ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600')}`}>
+                        <span className={`text-xs px-2 py-1 rounded-full ${isOverdue(todo.due_date) && !todo.completed ? 'bg-red-500/20 text-red-400' : (isDarkMode ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600')}`}>
                           📅 截止: {new Date(todo.due_date).toLocaleDateString('zh-CN')}
                         </span>
                       )}
                       {todo.planned_date && (
-                        <span className={darkMode ? 'text-xs px-2 py-1 rounded-full bg-orange-500/20 text-orange-400' : 'text-xs px-2 py-1 rounded-full bg-orange-100 text-orange-600'}>
+                        <span className={isDarkMode ? 'text-xs px-2 py-1 rounded-full bg-orange-500/20 text-orange-400' : 'text-xs px-2 py-1 rounded-full bg-orange-100 text-orange-600'}>
                           🗓️ 计划: {new Date(todo.planned_date).toLocaleDateString('zh-CN')}
                         </span>
                       )}
-                      <span className={darkMode ? 'text-white/40 text-xs' : 'text-slate-400 text-xs'}>
+                      <span className={isDarkMode ? 'text-white/40 text-xs' : 'text-slate-400 text-xs'}>
                         创建于: {new Date(todo.created_at).toLocaleDateString('zh-CN')}
                       </span>
                     </div>
@@ -716,7 +713,7 @@ export default function TodosPage() {
                     <div className="flex items-center gap-1 border-l border-white/10 pl-2">
                       <button
                         onClick={() => handleShareTodo(todo.id)}
-                        className={`p-2 rounded-lg transition-all ${darkMode ? 'text-white/50 hover:text-blue-400 hover:bg-blue-500/10' : 'text-slate-500 hover:text-blue-500 hover:bg-blue-50'}`}
+                        className={`p-2 rounded-lg transition-all ${isDarkMode ? 'text-white/50 hover:text-blue-400 hover:bg-blue-500/10' : 'text-slate-500 hover:text-blue-500 hover:bg-blue-50'}`}
                         title="分享此任务"
                       >
                         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -729,7 +726,7 @@ export default function TodosPage() {
                       </button>
                       <button
                         onClick={() => { setEditingTodo(todo); setShowEditModal(true); }}
-                        className={`p-2 rounded-lg transition-all ${darkMode ? 'text-white/50 hover:text-white hover:bg-white/10' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+                        className={`p-2 rounded-lg transition-all ${isDarkMode ? 'text-white/50 hover:text-white hover:bg-white/10' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
                       >
                         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
@@ -738,7 +735,7 @@ export default function TodosPage() {
                       </button>
                       <button
                         onClick={() => handleDeleteTodo(todo.id)}
-                        className={`p-2 rounded-lg transition-all ${darkMode ? 'text-white/50 hover:text-red-400 hover:bg-red-500/10' : 'text-slate-500 hover:text-red-500 hover:bg-red-50'}`}
+                        className={`p-2 rounded-lg transition-all ${isDarkMode ? 'text-white/50 hover:text-red-400 hover:bg-red-500/10' : 'text-slate-500 hover:text-red-500 hover:bg-red-50'}`}
                       >
                         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M3 6h18"/>
@@ -757,31 +754,31 @@ export default function TodosPage() {
 
       {showAddModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-          <div className={`rounded-2xl w-full max-w-md p-6 animate-scale-in max-h-[90vh] overflow-y-auto transition-colors duration-300 ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
-            <h2 className={`text-2xl font-bold mb-4 transition-colors duration-300 ${darkMode ? 'text-white' : 'text-slate-800'}`}>添加新待办</h2>
+          <div className={`rounded-2xl w-full max-w-md p-6 animate-scale-in max-h-[90vh] overflow-y-auto transition-colors duration-300 ${isDarkMode ? 'bg-slate-800' : 'bg-white'}`}>
+            <h2 className={`text-2xl font-bold mb-4 transition-colors duration-300 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>添加新待办</h2>
             <div className="space-y-4">
               <div>
-                <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>标题 *</label>
+                <label className={`block text-sm mb-2 transition-colors duration-300 ${isDarkMode ? 'text-white/70' : 'text-slate-600'}`}>标题 *</label>
                 <input
                   type="text"
                   value={newTodo.title}
                   onChange={(e) => setNewTodo({ ...newTodo, title: e.target.value })}
-                  className={`w-full px-4 py-3 rounded-lg placeholder-focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${darkMode ? 'bg-white/10 border border-white/20 text-white placeholder-white/30' : 'bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400'}`}
+                  className={`w-full px-4 py-3 rounded-lg placeholder-focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${isDarkMode ? 'bg-white/10 border border-white/20 text-white placeholder-white/30' : 'bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400'}`}
                   placeholder="输入待办事项标题"
                 />
               </div>
               <div>
-                <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>描述</label>
+                <label className={`block text-sm mb-2 transition-colors duration-300 ${isDarkMode ? 'text-white/70' : 'text-slate-600'}`}>描述</label>
                 <textarea
                   value={newTodo.description}
                   onChange={(e) => setNewTodo({ ...newTodo, description: e.target.value })}
                   rows={3}
-                  className={`w-full px-4 py-3 rounded-lg resize-none focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${darkMode ? 'bg-white/10 border border-white/20 text-white placeholder-white/30' : 'bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400'}`}
+                  className={`w-full px-4 py-3 rounded-lg resize-none focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${isDarkMode ? 'bg-white/10 border border-white/20 text-white placeholder-white/30' : 'bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400'}`}
                   placeholder="输入待办事项描述"
                 />
               </div>
               <div>
-                <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>分类</label>
+                <label className={`block text-sm mb-2 transition-colors duration-300 ${isDarkMode ? 'text-white/70' : 'text-slate-600'}`}>分类</label>
                 <div className="flex flex-wrap gap-2">
                   {CATEGORIES.map(cat => (
                     <button
@@ -790,7 +787,7 @@ export default function TodosPage() {
                       className={`px-3 py-2 rounded-lg font-semibold text-sm transition-all ${
                         newTodo.category === cat
                           ? `${CATEGORY_COLORS[cat]} text-white`
-                          : darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          : isDarkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
                       {cat}
@@ -799,12 +796,12 @@ export default function TodosPage() {
                 </div>
               </div>
               <div>
-                <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>添加照片</label>
+                <label className={`block text-sm mb-2 transition-colors duration-300 ${isDarkMode ? 'text-white/70' : 'text-slate-600'}`}>添加照片</label>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={(e) => handlePhotoUpload(e, true)}
-                  className={`w-full px-4 py-3 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${darkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'}`}
+                  className={`w-full px-4 py-3 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${isDarkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'}`}
                 />
                 {newTodo.photo && (
                   <img 
@@ -816,26 +813,26 @@ export default function TodosPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>截止日期</label>
+                  <label className={`block text-sm mb-2 transition-colors duration-300 ${isDarkMode ? 'text-white/70' : 'text-slate-600'}`}>截止日期</label>
                   <input
                     type="date"
                     value={newTodo.due_date}
                     onChange={(e) => setNewTodo({ ...newTodo, due_date: e.target.value })}
-                    className={`w-full px-4 py-3 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${darkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'}`}
+                    className={`w-full px-4 py-3 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${isDarkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'}`}
                   />
                 </div>
                 <div>
-                  <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>计划完成日期</label>
+                  <label className={`block text-sm mb-2 transition-colors duration-300 ${isDarkMode ? 'text-white/70' : 'text-slate-600'}`}>计划完成日期</label>
                   <input
                     type="date"
                     value={newTodo.planned_date}
                     onChange={(e) => setNewTodo({ ...newTodo, planned_date: e.target.value })}
-                    className={`w-full px-4 py-3 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${darkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'}`}
+                    className={`w-full px-4 py-3 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${isDarkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'}`}
                   />
                 </div>
               </div>
               <div>
-                <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>优先级</label>
+                <label className={`block text-sm mb-2 transition-colors duration-300 ${isDarkMode ? 'text-white/70' : 'text-slate-600'}`}>优先级</label>
                 <div className="flex gap-2">
                   {[1, 2, 3].map(p => (
                     <button
@@ -844,7 +841,7 @@ export default function TodosPage() {
                       className={`flex-1 py-2 rounded-lg font-semibold text-sm transition-all ${
                         newTodo.priority === p
                           ? `${getPriorityColor(p)} text-white`
-                          : darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          : isDarkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
                       {getPriorityText(p)}优先级
@@ -856,7 +853,7 @@ export default function TodosPage() {
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => setShowAddModal(false)}
-                className={`px-6 py-2 rounded-lg font-semibold transition-all ${darkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                className={`px-6 py-2 rounded-lg font-semibold transition-all ${isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
               >
                 取消
               </button>
@@ -874,29 +871,29 @@ export default function TodosPage() {
 
       {showEditModal && editingTodo && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-          <div className={`rounded-2xl w-full max-w-md p-6 animate-scale-in max-h-[90vh] overflow-y-auto transition-colors duration-300 ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
-            <h2 className={`text-2xl font-bold mb-4 transition-colors duration-300 ${darkMode ? 'text-white' : 'text-slate-800'}`}>编辑待办</h2>
+          <div className={`rounded-2xl w-full max-w-md p-6 animate-scale-in max-h-[90vh] overflow-y-auto transition-colors duration-300 ${isDarkMode ? 'bg-slate-800' : 'bg-white'}`}>
+            <h2 className={`text-2xl font-bold mb-4 transition-colors duration-300 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>编辑待办</h2>
             <div className="space-y-4">
               <div>
-                <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>标题 *</label>
+                <label className={`block text-sm mb-2 transition-colors duration-300 ${isDarkMode ? 'text-white/70' : 'text-slate-600'}`}>标题 *</label>
                 <input
                   type="text"
                   value={editingTodo.title}
                   onChange={(e) => setEditingTodo({ ...editingTodo, title: e.target.value })}
-                  className={`w-full px-4 py-3 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${darkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'}`}
+                  className={`w-full px-4 py-3 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${isDarkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'}`}
                 />
               </div>
               <div>
-                <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>描述</label>
+                <label className={`block text-sm mb-2 transition-colors duration-300 ${isDarkMode ? 'text-white/70' : 'text-slate-600'}`}>描述</label>
                 <textarea
                   value={editingTodo.description}
                   onChange={(e) => setEditingTodo({ ...editingTodo, description: e.target.value })}
                   rows={3}
-                  className={`w-full px-4 py-3 rounded-lg resize-none focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${darkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'}`}
+                  className={`w-full px-4 py-3 rounded-lg resize-none focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${isDarkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'}`}
                 />
               </div>
               <div>
-                <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>分类</label>
+                <label className={`block text-sm mb-2 transition-colors duration-300 ${isDarkMode ? 'text-white/70' : 'text-slate-600'}`}>分类</label>
                 <div className="flex flex-wrap gap-2">
                   {CATEGORIES.map(cat => (
                     <button
@@ -905,7 +902,7 @@ export default function TodosPage() {
                       className={`px-3 py-2 rounded-lg font-semibold text-sm transition-all ${
                         editingTodo.category === cat
                           ? `${CATEGORY_COLORS[cat]} text-white`
-                          : darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          : isDarkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
                       {cat}
@@ -914,12 +911,12 @@ export default function TodosPage() {
                 </div>
               </div>
               <div>
-                <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>添加照片</label>
+                <label className={`block text-sm mb-2 transition-colors duration-300 ${isDarkMode ? 'text-white/70' : 'text-slate-600'}`}>添加照片</label>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={(e) => handlePhotoUpload(e, false)}
-                  className={`w-full px-4 py-3 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${darkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'}`}
+                  className={`w-full px-4 py-3 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${isDarkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'}`}
                 />
                 {editingTodo.photo && (
                   <img 
@@ -931,26 +928,26 @@ export default function TodosPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>截止日期</label>
+                  <label className={`block text-sm mb-2 transition-colors duration-300 ${isDarkMode ? 'text-white/70' : 'text-slate-600'}`}>截止日期</label>
                   <input
                     type="date"
                     value={editingTodo.due_date}
                     onChange={(e) => setEditingTodo({ ...editingTodo, due_date: e.target.value })}
-                    className={`w-full px-4 py-3 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${darkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'}`}
+                    className={`w-full px-4 py-3 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${isDarkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'}`}
                   />
                 </div>
                 <div>
-                  <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>计划完成日期</label>
+                  <label className={`block text-sm mb-2 transition-colors duration-300 ${isDarkMode ? 'text-white/70' : 'text-slate-600'}`}>计划完成日期</label>
                   <input
                     type="date"
                     value={editingTodo.planned_date}
                     onChange={(e) => setEditingTodo({ ...editingTodo, planned_date: e.target.value })}
-                    className={`w-full px-4 py-3 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${darkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'}`}
+                    className={`w-full px-4 py-3 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors duration-300 ${isDarkMode ? 'bg-white/10 border border-white/20 text-white' : 'bg-slate-50 border border-slate-200 text-slate-800'}`}
                   />
                 </div>
               </div>
               <div>
-                <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>优先级</label>
+                <label className={`block text-sm mb-2 transition-colors duration-300 ${isDarkMode ? 'text-white/70' : 'text-slate-600'}`}>优先级</label>
                 <div className="flex gap-2">
                   {[1, 2, 3].map(p => (
                     <button
@@ -959,7 +956,7 @@ export default function TodosPage() {
                       className={`flex-1 py-2 rounded-lg font-semibold text-sm transition-all ${
                         editingTodo.priority === p
                           ? `${getPriorityColor(p)} text-white`
-                          : darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          : isDarkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
                       {getPriorityText(p)}优先级
@@ -968,13 +965,13 @@ export default function TodosPage() {
                 </div>
               </div>
               <div>
-                <label className={`block text-sm mb-2 transition-colors duration-300 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>完成状态</label>
+                <label className={`block text-sm mb-2 transition-colors duration-300 ${isDarkMode ? 'text-white/70' : 'text-slate-600'}`}>完成状态</label>
                 <button
                   onClick={() => setEditingTodo({ ...editingTodo, completed: !editingTodo.completed })}
                   className={`w-full py-2 rounded-lg font-semibold text-sm transition-all ${
                     editingTodo.completed
                       ? 'bg-green-500 text-white'
-                      : darkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      : isDarkMode ? 'bg-white/10 text-white/70 hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
                   {editingTodo.completed ? '已完成' : '待完成'}
@@ -984,7 +981,7 @@ export default function TodosPage() {
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => { setShowEditModal(false); setEditingTodo(null); }}
-                className={`px-6 py-2 rounded-lg font-semibold transition-all ${darkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                className={`px-6 py-2 rounded-lg font-semibold transition-all ${isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
               >
                 取消
               </button>
@@ -1002,24 +999,24 @@ export default function TodosPage() {
 
       {showTemplateModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-          <div className={`rounded-2xl w-full max-w-md p-6 animate-scale-in transition-colors duration-300 ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
-            <h2 className={`text-2xl font-bold mb-4 transition-colors duration-300 ${darkMode ? 'text-white' : 'text-slate-800'}`}>选择模板</h2>
+          <div className={`rounded-2xl w-full max-w-md p-6 animate-scale-in transition-colors duration-300 ${isDarkMode ? 'bg-slate-800' : 'bg-white'}`}>
+            <h2 className={`text-2xl font-bold mb-4 transition-colors duration-300 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>选择模板</h2>
             <div className="space-y-3">
               {Object.entries(templates).map(([key, template]) => (
                 <button
                   key={key}
                   onClick={() => applyTemplate(key)}
-                  className={`w-full p-4 rounded-xl text-left transition-all ${darkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-slate-50 hover:bg-slate-100'}`}
+                  className={`w-full p-4 rounded-xl text-left transition-all ${isDarkMode ? 'bg-white/5 hover:bg-white/10' : 'bg-slate-50 hover:bg-slate-100'}`}
                 >
-                  <h3 className={`font-semibold mb-2 ${darkMode ? 'text-white' : 'text-slate-800'}`}>{template.name}</h3>
+                  <h3 className={`font-semibold mb-2 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{template.name}</h3>
                   <div className="flex flex-wrap gap-1">
                     {template.items.slice(0, 3).map((item, index) => (
-                      <span key={index} className={`px-2 py-0.5 rounded-full text-xs ${darkMode ? 'bg-white/10 text-white/70' : 'bg-slate-200 text-slate-600'}`}>
+                      <span key={index} className={`px-2 py-0.5 rounded-full text-xs ${isDarkMode ? 'bg-white/10 text-white/70' : 'bg-slate-200 text-slate-600'}`}>
                         {item}
                       </span>
                     ))}
                     {template.items.length > 3 && (
-                      <span className={`px-2 py-0.5 rounded-full text-xs ${darkMode ? 'bg-white/10 text-white/70' : 'bg-slate-200 text-slate-600'}`}>
+                      <span className={`px-2 py-0.5 rounded-full text-xs ${isDarkMode ? 'bg-white/10 text-white/70' : 'bg-slate-200 text-slate-600'}`}>
                         +{template.items.length - 3}
                       </span>
                     )}
@@ -1030,7 +1027,7 @@ export default function TodosPage() {
             <div className="flex justify-end mt-6">
               <button
                 onClick={() => setShowTemplateModal(false)}
-                className={`px-6 py-2 rounded-lg font-semibold transition-all ${darkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                className={`px-6 py-2 rounded-lg font-semibold transition-all ${isDarkMode ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
               >
                 取消
               </button>
@@ -1041,20 +1038,20 @@ export default function TodosPage() {
 
       {showShareSuccess && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-          <div className={`rounded-2xl w-full max-w-md p-6 animate-scale-in text-center transition-colors duration-300 ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
+          <div className={`rounded-2xl w-full max-w-md p-6 animate-scale-in text-center transition-colors duration-300 ${isDarkMode ? 'bg-slate-800' : 'bg-white'}`}>
             <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-green-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="20 6 9 17 4 12"/>
               </svg>
             </div>
-            <h2 className={`text-2xl font-bold mb-2 transition-colors duration-300 ${darkMode ? 'text-white' : 'text-slate-800'}`}>分享链接已复制</h2>
-            <p className={`text-sm mb-4 ${darkMode ? 'text-white/60' : 'text-slate-500'}`}>链接已自动复制到剪贴板，24小时内有效</p>
-            <div className={`p-3 rounded-lg text-left mb-6 ${darkMode ? 'bg-white/5' : 'bg-slate-50'}`}>
+            <h2 className={`text-2xl font-bold mb-2 transition-colors duration-300 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>分享链接已复制</h2>
+            <p className={`text-sm mb-4 ${isDarkMode ? 'text-white/60' : 'text-slate-500'}`}>链接已自动复制到剪贴板，24小时内有效</p>
+            <div className={`p-3 rounded-lg text-left mb-6 ${isDarkMode ? 'bg-white/5' : 'bg-slate-50'}`}>
               <input
                 type="text"
                 value={shareUrl}
                 readOnly
-                className={`w-full bg-transparent ${darkMode ? 'text-white/80' : 'text-slate-600'} text-sm`}
+                className={`w-full bg-transparent ${isDarkMode ? 'text-white/80' : 'text-slate-600'} text-sm`}
               />
             </div>
             <button

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Navbar from '../components/Navbar';
+import { useTheme } from '../context/ThemeContext';
 
 interface DiceResult {
   value: number;
@@ -22,6 +23,7 @@ export default function DecisionPage() {
   const [countdown, setCountdown] = useState<number | null>(null);
   const [showQuote, setShowQuote] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const { isDarkMode } = useTheme();
   const router = useRouter();
 
   useEffect(() => {
@@ -114,23 +116,23 @@ export default function DecisionPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-gradient-to-br dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 from-gray-50 via-white to-gray-100 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 dark:border-white/20 border-gray-300 dark:border-t-white border-t-gray-800 rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col items-center justify-center relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br dark:from-slate-900 dark:via-purple-900 dark:to-slate-900 from-gray-50 via-white to-gray-100 flex flex-col items-center justify-center relative overflow-hidden">
       <Navbar />
       <div className="absolute inset-0 bg-gradient-radial"></div>
       
       <div className="relative z-10 w-full max-w-2xl px-6 pt-20">
         <div className="text-center mb-10">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold dark:text-white text-gray-900 mb-4">
             <span className="text-gradient">命运抉择</span>
           </h1>
-          <p className="text-white/70 text-lg">选择一种方式，让命运决定你的下一步</p>
+          <p className="dark:text-white/70 text-gray-600 text-lg">选择一种方式，让命运决定你的下一步</p>
         </div>
 
         <div className="flex justify-center gap-4 mb-12">
@@ -138,8 +140,8 @@ export default function DecisionPage() {
             onClick={() => { setMode('dice'); setShowResult(false); setShowQuote(false); }}
             className={`px-6 py-3 rounded-full font-semibold transition-all duration-300 ${
               mode === 'dice' 
-                ? 'bg-white text-purple-700 shadow-lg scale-105' 
-                : 'bg-white/10 text-white/70 hover:bg-white/20'
+                ? 'bg-white dark:text-purple-700 shadow-lg scale-105 text-gray-900' 
+                : 'dark:bg-white/10 dark:text-white/70 dark:hover:bg-white/20 bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`}
           >
             🎲 摇骰子
@@ -148,8 +150,8 @@ export default function DecisionPage() {
             onClick={() => { setMode('number'); setShowResult(false); setShowQuote(false); }}
             className={`px-6 py-3 rounded-full font-semibold transition-all duration-300 ${
               mode === 'number' 
-                ? 'bg-white text-purple-700 shadow-lg scale-105' 
-                : 'bg-white/10 text-white/70 hover:bg-white/20'
+                ? 'bg-white dark:text-purple-700 shadow-lg scale-105 text-gray-900' 
+                : 'dark:bg-white/10 dark:text-white/70 dark:hover:bg-white/20 bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`}
           >
             🔢 选数字
@@ -202,13 +204,13 @@ export default function DecisionPage() {
             ) : (
               <div className="mb-10">
                 <div className="relative w-40 h-40 flex items-center justify-center">
-                  <div className="absolute inset-0 border-4 border-white/20 rounded-full animate-spin" style={{ animationDuration: '3s' }}></div>
-                  <div className="absolute inset-4 border-2 border-white/10 rounded-full"></div>
-                  <div className={`text-8xl font-bold transition-all duration-200 ${countdown !== null ? 'text-white scale-110' : 'text-white/70'}`}>
+                  <div className="absolute inset-0 border-4 dark:border-white/20 border-gray-300 rounded-full animate-spin" style={{ animationDuration: '3s' }}></div>
+                  <div className="absolute inset-4 border-2 dark:border-white/10 border-gray-200 rounded-full"></div>
+                  <div className={`text-8xl font-bold transition-all duration-200 ${countdown !== null ? 'dark:text-white text-gray-900 scale-110' : 'dark:text-white/70 text-gray-400'}`}>
                     {countdown ?? '?'}
                   </div>
                 </div>
-                <p className="text-white/50 text-center mt-4">数字范围: 1-10</p>
+                <p className="dark:text-white/50 text-gray-400 text-center mt-4">数字范围: 1-10</p>
               </div>
             )}
 
@@ -239,11 +241,11 @@ export default function DecisionPage() {
               </span>
             </div>
             
-            <div className="glass-effect rounded-2xl p-8 mb-8">
-              <h2 className="text-3xl font-bold text-white mb-4">
+            <div className="dark:glass-effect glass-effect-light rounded-2xl p-8 mb-8">
+              <h2 className="text-3xl font-bold dark:text-white text-gray-900 mb-4">
                 {getResultMessage(mode === 'dice' ? diceResult!.isEven : numberResult!.isEven).title}
               </h2>
-              <p className="text-white/80 text-lg mb-6">
+              <p className="dark:text-white/80 text-gray-600 text-lg mb-6">
                 {getResultMessage(mode === 'dice' ? diceResult!.isEven : numberResult!.isEven).desc}
               </p>
               <div className="flex justify-center gap-4">
@@ -260,7 +262,7 @@ export default function DecisionPage() {
             <div className="flex justify-center gap-4">
               <button
                 onClick={handleRetry}
-                className="px-6 py-3 bg-white/10 text-white rounded-full font-semibold hover:bg-white/20 transition-all"
+                className="px-6 py-3 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-full font-semibold transition-all"
               >
                 再试一次
               </button>
@@ -283,16 +285,16 @@ export default function DecisionPage() {
 
       {showQuote && (
         <div 
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in"
+          className="fixed inset-0 dark:bg-black/70 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in"
           onClick={() => setShowQuote(false)}
         >
           <div 
-            className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-8 max-w-md mx-4 shadow-2xl border border-white/10 animate-scale-in"
+            className="dark:bg-gradient-to-br dark:from-slate-800 dark:to-slate-900 bg-white rounded-2xl p-8 max-w-md mx-4 shadow-2xl dark:border border-white/10 border-gray-200 animate-scale-in"
             onClick={e => e.stopPropagation()}
           >
             <button 
               onClick={() => setShowQuote(false)}
-              className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors"
+              className="absolute top-4 right-4 dark:text-white/50 dark:hover:text-white text-gray-400 hover:text-gray-600 transition-colors"
             >
               <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="18" y1="6" x2="6" y2="18"/>
@@ -302,11 +304,11 @@ export default function DecisionPage() {
             
             <div className="text-center">
               <div className="text-4xl mb-6">💭</div>
-              <blockquote className="text-xl text-white/90 italic mb-6 leading-relaxed">
+              <blockquote className="text-xl dark:text-white/90 text-gray-700 italic mb-6 leading-relaxed">
                 "当曾小贤向天空抛硬币的时候，他其实那个时候已经不在乎硬币是正还是反。因为当硬币丢向空中的一瞬间，就已经知道你想要的是什么了。所以我们这个选择也是帮你确定你内心最真实的想法，给你一个助力，希望你能不忘初心。"
               </blockquote>
               <div className="w-16 h-0.5 bg-gradient-to-r from-purple-500 to-pink-500 mx-auto"></div>
-              <p className="text-white/50 text-sm mt-4">—— 来自《爱情公寓》的启示</p>
+              <p className="dark:text-white/50 text-gray-400 text-sm mt-4">—— 来自《爱情公寓》的启示</p>
             </div>
           </div>
         </div>
