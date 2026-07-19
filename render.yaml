@@ -1,13 +1,14 @@
 services:
   - type: web
-    name: todo-adventure-backend
+    name: todo-adventure
     env: python
     buildCommand: |
       pip install -r backend/requirements.txt
+      pip install gunicorn
     startCommand: gunicorn -w 4 -b 0.0.0.0:$PORT backend.app:app
     envVars:
       - key: STATIC_DIR
-        value: ./frontend/out
+        value: ./backend/frontend_dist
       - key: TODO_DB_PATH
         value: ./backend/todos.db
       - key: TODO_PHOTOS_PATH
