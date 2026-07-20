@@ -7,7 +7,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://todo-adventure-backend.onrender.com/api/$1"
+      "destination": "https://todo-adventure-backend-production.up.railway.app/api/$1"
     }
   ]
 }
